@@ -1,0 +1,685 @@
+"use client";
+
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  ZoomIn,
+  ZoomOut,
+  Trash2,
+  Building2,
+  Landmark,
+  MapPin,
+  Brain,
+  Layers,
+  History,
+  Download,
+  Upload,
+  Wifi,
+  WifiOff,
+  Undo,
+  Redo,
+  Route,
+  Ruler,
+} from "lucide-react";
+import { useSharedState } from "../shared/SharedStateProvider";
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
+
+// Set Mapbox access token
+mapboxgl.accessToken = 'pk.eyJ1Ijoia2hpd25pdGkiLCJhIjoiY205eDFwMzl0MHY1YzJscjB3bm4xcnh5ZyJ9.ANGVE0tiA9NslBn8ft_9fQ';
+
+type MarkerType = "location" | "poi" | "business" | "route" | "custom";
+
+const MapComponent = () => {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [showLayers, setShowLayers] = useState(false);
+
+  // Get enhanced shared state from context
+  const { 
+    mapState, 
+    updateZoom, 
+    updateCenter, 
+    updateBounds,
+    addMarker, 
+    updateMarker,
+    removeMarker,
+    selectMarker, 
+    clearMarkers,
+    bulkAddMarkers,
+    addLayer,
+    toggleLayer,
+    setMode,
+    setActiveMarkerType,
+    executeCommand,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    enableRealTime,
+    disableRealTime,
+    forceSync,
+    getMarkersByType,
+    exportState,
+    importState,
+  } = useSharedState();
+
+  // Initialize Mapbox map
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    mapRef.current = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [mapState.center.lng, mapState.center.lat],
+      zoom: mapState.zoom,
+      attributionControl: false,
+    });
+
+    const map = mapRef.current;
+
+    map.on('load', () => {
+      setIsMapLoaded(true);
+      
+      // Add custom controls
+      map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.addControl(new mapboxgl.ScaleControl(), 'bottom-left');
+      map.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+      
+      // Add geolocate control
+      const geolocate = new mapboxgl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+        showUserHeading: true
+      });
+      map.addControl(geolocate, 'top-right');
+    });
+
+    // Map event listeners
+    map.on('zoom', () => {
+      updateZoom(map.getZoom());
+    });
+
+    map.on('move', () => {
+      const center = map.getCenter();
+      updateCenter({ lat: center.lat, lng: center.lng });
+    });
+
+    map.on('moveend', () => {
+      const bounds = map.getBounds();
+      if (bounds) {
+        updateBounds({
+          north: bounds.getNorth(),
+          south: bounds.getSouth(),
+          east: bounds.getEast(),
+          west: bounds.getWest(),
+        });
+      }
+    });
+
+    map.on('click', (e) => {
+      if (mapState.activeMarkerType) {
+        handleMapClick(e.lngLat.lat, e.lngLat.lng);
+      }
+    });
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      setIsMapLoaded(false);
+    };
+  }, []);
+
+  // Sync map state with Mapbox
+  useEffect(() => {
+    if (!mapRef.current || !isMapLoaded) return;
+
+    const map = mapRef.current;
+    
+    // Update map center and zoom if they differ significantly
+    const currentCenter = map.getCenter();
+    const currentZoom = map.getZoom();
+    
+    const centerDiff = Math.abs(currentCenter.lat - mapState.center.lat) + Math.abs(currentCenter.lng - mapState.center.lng);
+    const zoomDiff = Math.abs(currentZoom - mapState.zoom);
+    
+    if (centerDiff > 0.001) {
+      map.setCenter([mapState.center.lng, mapState.center.lat]);
+    }
+    
+    if (zoomDiff > 0.1) {
+      map.setZoom(mapState.zoom);
+    }
+  }, [mapState.center, mapState.zoom, isMapLoaded]);
+
+  // Sync markers with Mapbox
+  useEffect(() => {
+    if (!mapRef.current || !isMapLoaded) return;
+
+    const map = mapRef.current;
+    
+    // Remove markers that no longer exist
+    markersRef.current.forEach((marker, id) => {
+      if (!mapState.markers.find(m => m.id === id)) {
+        marker.remove();
+        markersRef.current.delete(id);
+      }
+    });
+
+    // Add or update markers
+    mapState.markers.forEach(markerData => {
+      let marker = markersRef.current.get(markerData.id);
+      
+      if (!marker) {
+        // Create new marker
+        const el = document.createElement('div');
+        el.className = 'custom-marker';
+        el.style.cssText = `
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          color: white;
+          font-weight: bold;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          transition: all 0.2s ease;
+          ${markerData.selected ? 'transform: scale(1.2); box-shadow: 0 0 0 3px rgba(255,255,255,0.8);' : ''}
+        `;
+        
+        // Set marker color based on type
+        switch (markerData.type) {
+          case 'location':
+            el.style.backgroundColor = '#3B82F6';
+            el.textContent = '📍';
+            break;
+          case 'poi':
+            el.style.backgroundColor = '#8B5CF6';
+            el.textContent = '🏛️';
+            break;
+          case 'business':
+            el.style.backgroundColor = '#10B981';
+            el.textContent = '🏢';
+            break;
+          case 'route':
+            el.style.backgroundColor = '#F59E0B';
+            el.textContent = '🛣️';
+            break;
+          default:
+            el.style.backgroundColor = '#6B7280';
+            el.textContent = '📌';
+        }
+
+        marker = new mapboxgl.Marker(el)
+          .setLngLat([markerData.position.lng, markerData.position.lat])
+          .addTo(map);
+
+        // Add click handler
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectMarker(markerData.id);
+        });
+
+        // Add popup
+        const popup = new mapboxgl.Popup({ offset: 25 })
+          .setHTML(`
+            <div class="p-2">
+              <h3 class="font-semibold text-sm">${markerData.title}</h3>
+              ${markerData.description ? `<p class="text-xs text-gray-600 mt-1">${markerData.description}</p>` : ''}
+              <div class="flex gap-1 mt-2">
+                <button class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600" onclick="window.editMarker('${markerData.id}')">Edit</button>
+                <button class="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600" onclick="window.deleteMarker('${markerData.id}')">Delete</button>
+              </div>
+            </div>
+          `);
+
+        marker.setPopup(popup);
+        markersRef.current.set(markerData.id, marker);
+      } else {
+        // Update existing marker position
+        marker.setLngLat([markerData.position.lng, markerData.position.lat]);
+        
+        // Update marker appearance for selection
+        const el = marker.getElement();
+        if (markerData.selected) {
+          el.style.transform = 'scale(1.2)';
+          el.style.boxShadow = '0 0 0 3px rgba(255,255,255,0.8)';
+        } else {
+          el.style.transform = 'scale(1)';
+          el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+        }
+      }
+    });
+
+    // Global functions for popup buttons
+    (window as any).editMarker = (id: string) => {
+      const marker = mapState.markers.find(m => m.id === id);
+      if (marker) {
+        const newTitle = prompt('Enter new title:', marker.title);
+        if (newTitle) {
+          updateMarker(id, { title: newTitle });
+        }
+      }
+    };
+
+    (window as any).deleteMarker = (id: string) => {
+      if (confirm('Are you sure you want to delete this marker?')) {
+        removeMarker(id);
+      }
+    };
+
+  }, [mapState.markers, isMapLoaded, selectMarker, updateMarker, removeMarker]);
+
+  const handleMapClick = useCallback(async (lat: number, lng: number) => {
+    if (!mapState.activeMarkerType) return;
+
+    await addMarker({
+      type: mapState.activeMarkerType,
+      position: { lat, lng },
+      title: `New ${mapState.activeMarkerType} ${mapState.markers.length + 1}`,
+      description: `Added via map click at ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+    });
+
+    setActiveMarkerType(null);
+    setMode("explore");
+  }, [mapState.activeMarkerType, mapState.markers.length, addMarker, setActiveMarkerType, setMode]);
+
+  const handleZoomIn = () => {
+    if (mapState.zoom < 20) {
+      updateZoom(mapState.zoom + 1);
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (mapState.zoom > 1) {
+      updateZoom(mapState.zoom - 1);
+    }
+  };
+
+  const handleAddMarker = (type: MarkerType) => {
+    const isActive = mapState.activeMarkerType === type;
+    setActiveMarkerType(isActive ? null : type);
+    setMode(isActive ? "explore" : "add");
+  };
+
+  const handleBulkAddSampleMarkers = async () => {
+    const sampleMarkers = [
+      {
+        type: "poi" as MarkerType,
+        position: { lat: mapState.center.lat + 0.01, lng: mapState.center.lng + 0.01 },
+        title: "Sample POI 1",
+        description: "A sample point of interest",
+      },
+      {
+        type: "business" as MarkerType,
+        position: { lat: mapState.center.lat - 0.01, lng: mapState.center.lng + 0.01 },
+        title: "Sample Business 1",
+        description: "A sample business location",
+      },
+      {
+        type: "location" as MarkerType,
+        position: { lat: mapState.center.lat + 0.01, lng: mapState.center.lng - 0.01 },
+        title: "Sample Location 1",
+        description: "A sample location marker",
+      },
+    ];
+
+    await bulkAddMarkers(sampleMarkers);
+  };
+
+  const handleExportState = () => {
+    const state = exportState();
+    const blob = new Blob([state], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `map-state-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportState = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          try {
+            importState(content);
+          } catch (error) {
+            alert('Failed to import state. Please check the file format.');
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
+
+  const handleAICommand = async () => {
+    const command = prompt('Enter AI command (e.g., "add marker at current center", "clear all markers", "zoom to level 15"):');
+    if (command) {
+      try {
+        const result = await executeCommand(command, { 
+          currentCenter: mapState.center,
+          currentZoom: mapState.zoom,
+        });
+        alert(`Command executed: ${result}`);
+      } catch (error) {
+        alert(`Command failed: ${error}`);
+      }
+    }
+  };
+
+  return (
+    <Card className="flex flex-col h-full bg-white overflow-hidden">
+      {/* Enhanced Controls */}
+      <div className="flex-shrink-0 border-b border-gray-200">
+        {/* Primary Controls */}
+        <div className="flex flex-wrap gap-2 sm:gap-4 p-3 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium hidden sm:inline">🗺️ Map:</span>
+            <Button size="sm" variant="outline" onClick={handleZoomIn}>
+              <ZoomIn className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">In</span>
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleZoomOut}>
+              <ZoomOut className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Out</span>
+            </Button>
+            <Badge variant="outline" className="bg-white text-xs">
+              {mapState.zoom.toFixed(1)}
+            </Badge>
+          </div>
+
+          <Separator orientation="vertical" className="h-6 hidden sm:block" />
+
+          <div className="flex items-center gap-1 sm:gap-2">
+            <span className="text-sm font-medium hidden lg:inline">📍 Add:</span>
+            <Button
+              size="sm"
+              variant={mapState.activeMarkerType === "poi" ? "default" : "outline"}
+              onClick={() => handleAddMarker("poi")}
+              className="text-xs"
+            >
+              <Landmark className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">POI</span>
+            </Button>
+            <Button
+              size="sm"
+              variant={mapState.activeMarkerType === "business" ? "default" : "outline"}
+              onClick={() => handleAddMarker("business")}
+              className="text-xs"
+            >
+              <Building2 className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Business</span>
+            </Button>
+            <Button
+              size="sm"
+              variant={mapState.activeMarkerType === "location" ? "default" : "outline"}
+              onClick={() => handleAddMarker("location")}
+              className="text-xs"
+            >
+              <MapPin className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Location</span>
+            </Button>
+            <Button
+              size="sm"
+              variant={mapState.activeMarkerType === "route" ? "default" : "outline"}
+              onClick={() => handleAddMarker("route")}
+            >
+              <Route className="h-4 w-4 mr-1" /> Route
+            </Button>
+          </div>
+
+          <Separator orientation="vertical" className="h-8" />
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">🎯 Mode:</span>
+            <Button
+              size="sm"
+              variant={mapState.mode === "explore" ? "default" : "outline"}
+              onClick={() => setMode("explore")}
+            >
+              Explore
+            </Button>
+            <Button
+              size="sm"
+              variant={mapState.mode === "select" ? "default" : "outline"}
+              onClick={() => setMode("select")}
+            >
+              Select
+            </Button>
+            <Button
+              size="sm"
+              variant={mapState.mode === "measure" ? "default" : "outline"}
+              onClick={() => setMode("measure")}
+            >
+              <Ruler className="h-4 w-4 mr-1" /> Measure
+            </Button>
+          </div>
+        </div>
+
+        {/* Secondary Controls */}
+        <div className="flex flex-wrap gap-4 p-3 bg-blue-50 rounded-lg">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">⚡ Actions:</span>
+            <Button size="sm" variant="outline" onClick={clearMarkers}>
+              <Trash2 className="h-4 w-4 mr-1" /> Clear
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleBulkAddSampleMarkers}>
+              <MapPin className="h-4 w-4 mr-1" /> Add Samples
+            </Button>
+            <Button size="sm" onClick={handleAICommand}>
+              <Brain className="h-4 w-4 mr-1" /> AI Command
+            </Button>
+          </div>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">📚 History:</span>
+            <Button size="sm" variant="outline" onClick={undo} disabled={!canUndo()}>
+              <Undo className="h-4 w-4 mr-1" /> Undo
+            </Button>
+            <Button size="sm" variant="outline" onClick={redo} disabled={!canRedo()}>
+              <Redo className="h-4 w-4 mr-1" /> Redo
+            </Button>
+          </div>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">💾 Data:</span>
+            <Button size="sm" variant="outline" onClick={handleExportState}>
+              <Download className="h-4 w-4 mr-1" /> Export
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleImportState}>
+              <Upload className="h-4 w-4 mr-1" /> Import
+            </Button>
+          </div>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">🔄 Sync:</span>
+            <Button
+              size="sm"
+              variant={mapState.isRealTimeEnabled ? "default" : "outline"}
+              onClick={mapState.isRealTimeEnabled ? disableRealTime : enableRealTime}
+            >
+              {mapState.isRealTimeEnabled ? <Wifi className="h-4 w-4 mr-1" /> : <WifiOff className="h-4 w-4 mr-1" />}
+              {mapState.isRealTimeEnabled ? 'Live' : 'Offline'}
+            </Button>
+            <Button size="sm" variant="outline" onClick={forceSync}>
+              Force Sync
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Map Container */}
+      <div className="relative flex-1 border-2 border-gray-200 rounded-lg overflow-hidden min-h-[500px]">
+        {/* Status Indicators */}
+        <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+          {mapState.isSyncing && (
+            <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold animate-pulse">
+              🔄 Syncing State
+            </div>
+          )}
+          
+          {mapState.connectionStatus !== 'connected' && (
+            <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              mapState.connectionStatus === 'reconnecting' 
+                ? 'bg-yellow-500 text-white animate-pulse' 
+                : 'bg-red-500 text-white'
+            }`}>
+              {mapState.connectionStatus === 'reconnecting' ? '🔄 Reconnecting' : '❌ Disconnected'}
+            </div>
+          )}
+
+          {mapState.activeMarkerType && (
+            <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+              📍 Click to add {mapState.activeMarkerType}
+            </div>
+          )}
+        </div>
+
+        {/* Map Info Panel */}
+        <div className="absolute bottom-3 left-3 z-10 bg-black/80 text-white px-3 py-2 rounded-md text-xs font-mono">
+          📍 {mapState.markers.length} markers | 🧭 {mapState.mode} mode | 📊 Zoom: {mapState.zoom.toFixed(1)}
+          <br />
+          📍 Center: {mapState.center.lat.toFixed(4)}, {mapState.center.lng.toFixed(4)}
+          {mapState.selectedMarkerId && (
+            <>
+              <br />
+              🎯 Selected: {mapState.markers.find(m => m.id === mapState.selectedMarkerId)?.title}
+            </>
+          )}
+        </div>
+
+        {/* Layers Panel */}
+        {showLayers && (
+          <div className="absolute top-3 right-3 z-10 bg-white p-3 rounded-lg shadow-lg border max-w-xs">
+            <h4 className="font-semibold text-sm mb-2">Map Layers</h4>
+            <div className="space-y-2">
+              {mapState.layers.map(layer => (
+                <div key={layer.id} className="flex items-center justify-between">
+                  <span className="text-xs">{layer.type}</span>
+                  <Button
+                    size="sm"
+                    variant={mapState.activeLayers.includes(layer.id) ? "default" : "outline"}
+                    onClick={() => toggleLayer(layer.id)}
+                  >
+                    {mapState.activeLayers.includes(layer.id) ? 'Hide' : 'Show'}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+      </div>
+
+      {/* Map Container */}
+      <div className="relative flex-1 min-h-0 border border-gray-200 rounded-lg overflow-hidden">
+        {/* Status Indicators */}
+        <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+          {mapState.isSyncing && (
+            <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold animate-pulse">
+              🔄 Syncing State
+            </div>
+          )}
+          
+          {mapState.activeMarkerType && (
+            <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+              ✚ Click to add {mapState.activeMarkerType}
+            </div>
+          )}
+          
+          <div className="bg-black/70 text-white px-2 py-1 rounded text-xs">
+            📍 {mapState.markers.length} markers • 🔍 {mapState.zoom.toFixed(1)}x
+          </div>
+        </div>
+
+        {/* Layers Panel Toggle */}
+        <div className="absolute top-3 right-3 z-10">
+          <Button
+            size="sm"
+            variant={showLayers ? "default" : "outline"}
+            className="bg-white/90 backdrop-blur"
+            onClick={() => setShowLayers(!showLayers)}
+          >
+            <Layers className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Layers Panel */}
+        {showLayers && (
+          <div className="absolute top-14 right-3 z-10 bg-white/95 backdrop-blur rounded-lg border p-3 min-w-[200px]">
+            <h4 className="font-semibold text-sm mb-2">Map Layers</h4>
+            <div className="space-y-2">
+              {mapState.layers.map((layer) => (
+                <div key={layer.id} className="flex items-center justify-between">
+                  <span className="text-xs">{layer.type}</span>
+                  <Button
+                    size="sm"
+                    variant={mapState.activeLayers.includes(layer.id) ? "default" : "outline"}
+                    onClick={() => toggleLayer(layer.id)}
+                  >
+                    {mapState.activeLayers.includes(layer.id) ? 'Hide' : 'Show'}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Mapbox Container */}
+        <div 
+          ref={mapContainerRef} 
+          className="absolute inset-0 w-full h-full"
+          style={{ cursor: mapState.activeMarkerType ? "crosshair" : "default" }}
+        />
+
+        {/* Loading Overlay */}
+        {!isMapLoaded && (
+          <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+              <p className="text-sm text-gray-600">Loading Mapbox...</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Command Queue Status */}
+      {mapState.pendingCommands.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <h4 className="font-semibold text-sm text-yellow-800 mb-2">Pending Commands</h4>
+          <div className="space-y-1">
+            {mapState.pendingCommands.slice(-3).map(cmd => (
+              <div key={cmd.id} className="flex items-center justify-between text-xs">
+                <span className="text-yellow-700">{cmd.command}</span>
+                <Badge variant={
+                  cmd.status === 'completed' ? 'default' :
+                  cmd.status === 'failed' ? 'destructive' :
+                  cmd.status === 'executing' ? 'secondary' : 'outline'
+                }>
+                  {cmd.status}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+};
+
+export default MapComponent;
