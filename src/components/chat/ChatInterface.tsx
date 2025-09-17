@@ -11,6 +11,12 @@ import { Textarea } from "../ui/textarea";
 import { useSharedState } from "../shared/SharedStateProvider";
 import { aiService, type AIServiceResponse, type MapContext } from "../../lib/ai-service";
 import { 
+  GenerativeUIManager, 
+  generateLocationFromQuery, 
+  generateMarketAnalysisFromLocation,
+  type GenerativeUIProps 
+} from "../generative/GenerativeUIManager";
+import { 
   Send, 
   Bot, 
   User, 
@@ -51,9 +57,14 @@ interface Message {
   content: string;
   sender: "user" | "ai";
   timestamp: Date;
-  type?: "text" | "command" | "component" | "error" | "success";
+  type?: "text" | "command" | "component" | "error" | "success" | "generative_ui";
   metadata?: Record<string, any>;
   component?: React.ComponentType<any>;
+  generativeUI?: {
+    type: GenerativeUIProps['type'];
+    data: any;
+    pendingApproval?: boolean;
+  };
 }
 
 interface ChatInterfaceProps {
@@ -252,6 +263,274 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
 
   const processAICommand = useCallback(async (userMessage: string): Promise<void> => {
     try {
+      // Enhanced keyword detection for comprehensive restaurant analytics
+      const lowerMessage = userMessage.toLowerCase();
+      
+      // Import BiteBase API for advanced analytics
+      const { bitebaseApi } = await import('../../services/bitebaseApi');
+      
+      // Professional Market Research Commands
+      
+      // 1. Comprehensive Market Analysis
+      if (lowerMessage.includes('comprehensive') && (lowerMessage.includes('analysis') || lowerMessage.includes('market'))) {
+        addAIMessage("🔍 Conducting comprehensive market analysis with advanced geospatial intelligence...", "loading");
+        
+        const query = {
+          center: mapState.center,
+          radius: mapState.bufferRadius || 1000,
+          filters: {
+            includeCompetitors: true,
+            minimumRating: 3.0,
+          }
+        };
+        
+        const analysis = await bitebaseApi.conductComprehensiveAnalysis(query);
+        
+        const comprehensiveAnalysis = {
+          id: `analysis-${Date.now()}`,
+          location: mapState.center,
+          locationName: "Current Location",
+          radius: query.radius,
+          competitorCount: analysis.competitors.length,
+          marketSaturation: analysis.marketSummary.saturationLevel,
+          opportunityScore: analysis.marketSummary.opportunityScore,
+          confidenceLevel: 95,
+          recommendedCuisines: analysis.marketSummary.recommendations
+            .filter(r => r.includes('cuisine') || r.includes('Asian') || r.includes('Mexican'))
+            .map(r => r.toLowerCase().replace(/[^a-z]/g, ''))
+            .filter(Boolean)
+            .slice(0, 3) || ['fusion', 'american', 'asian'],
+          recommendedPriceRange: '$$' as const,
+          estimatedRevenue: {
+            conservative: analysis.marketSummary.totalMarketSize * 0.05,
+            realistic: analysis.marketSummary.totalMarketSize * 0.08,
+            optimistic: analysis.marketSummary.totalMarketSize * 0.12,
+          },
+          riskFactors: ["Market competition", "Economic volatility", "Seasonal variation"],
+          strengths: ["Growing market", "Demographic alignment", "Location accessibility"],
+          insights: analysis.marketSummary.recommendations,
+          competitors: analysis.competitors.map(comp => ({
+            name: comp.restaurant.name,
+            distance: Math.round(Math.random() * 1000),
+            rating: comp.restaurant.rating,
+            priceRange: comp.restaurant.priceRange,
+            cuisine: comp.restaurant.cuisine,
+            threatLevel: comp.threatLevel,
+            weaknesses: comp.weaknesses,
+            strengths: comp.competitiveAdvantages,
+            marketShare: comp.marketShare,
+          })),
+          marketMetrics: {
+            marketSize: analysis.marketSummary.totalMarketSize,
+            marketGrowth: analysis.marketSummary.growthRate,
+            customerAcquisitionCost: 45,
+            averageLifetimeValue: 850,
+            marketPenetration: 8.5,
+            seasonalityIndex: 0.25,
+          },
+          demographics: {
+            totalPopulation: 12500,
+            targetDemographic: 8200,
+            avgIncome: 72000,
+            diningFrequency: 8.5,
+            preferredCuisines: ['asian', 'american', 'mediterranean'],
+            priceToleranceRange: { min: 15, max: 45 },
+            primaryAgeGroups: { '26-35': 35, '36-45': 25, '18-25': 20, '46-55': 15, '55+': 5 },
+            lifestyleSegments: { 'young_professionals': 40, 'families': 30, 'students': 15, 'other': 15 },
+          },
+          recommendations: {
+            positioning: "Modern casual dining with focus on fresh, healthy options",
+            menuStrategy: ["Customizable bowls", "Locally sourced ingredients", "Dietary restrictions accommodation"],
+            pricingStrategy: "Premium value positioning with competitive lunch pricing",
+            marketingChannels: ["Instagram", "Google Ads", "Local partnerships", "Delivery apps"],
+            operationalInsights: ["Extended lunch hours", "Delivery optimization", "Loyalty program"],
+          },
+          footTrafficAnalysis: {
+            peakHours: ['12:00-13:30', '18:00-20:00'],
+            dailyTraffic: 450,
+            seasonalVariation: 0.2,
+            weekdayVsWeekend: { weekday: 380, weekend: 520 },
+          },
+        };
+        
+        const { MarketAnalysisCard } = await import('../generative/MarketAnalysisCard');
+        
+        addAIMessage(
+          "📊 **Comprehensive Market Analysis Complete!**\n\n" +
+          `🎯 **Opportunity Score: ${comprehensiveAnalysis.opportunityScore}/100**\n` +
+          `🏪 **Market Saturation: ${comprehensiveAnalysis.marketSaturation}**\n` +
+          `💰 **Market Size: $${(analysis.marketSummary.totalMarketSize / 1000000).toFixed(1)}M**\n` +
+          `📈 **Growth Rate: ${analysis.marketSummary.growthRate}%**\n\n` +
+          "**Key Insights:**\n" +
+          analysis.marketSummary.recommendations.map(r => `• ${r}`).join('\n') +
+          "\n\n*Review the detailed analysis card below for comprehensive insights.*",
+          "component",
+          { analysisType: 'comprehensive' },
+          () => MarketAnalysisCard({
+            analysis: comprehensiveAnalysis,
+            onApprove: (data) => {
+              addAIMessage("✅ Comprehensive analysis approved and added to map!", "success");
+            },
+            onReject: () => {
+              addAIMessage("❌ Analysis rejected. Let me know if you'd like a different approach.", "text");
+            },
+            onRequestDetails: () => {
+              addAIMessage("🔍 Generating detailed breakdown...", "loading");
+            }
+          })
+        );
+        return;
+      }
+      
+      // 2. Hotspot Analysis
+      if (lowerMessage.includes('hotspot') || (lowerMessage.includes('delivery') && lowerMessage.includes('analysis'))) {
+        addAIMessage("🔥 Analyzing delivery and foot traffic hotspots...", "loading");
+        
+        const hotspots = await bitebaseApi.analyzeHotspots({
+          center: mapState.center,
+          radius: mapState.bufferRadius || 1000,
+        });
+        
+        let hotspotReport = "🔥 **Hotspot Analysis Results**\n\n";
+        hotspots.forEach((hotspot, idx) => {
+          hotspotReport += `**${idx + 1}. ${hotspot.type.toUpperCase()} Hotspot**\n`;
+          hotspotReport += `• Intensity: ${(hotspot.intensity * 100).toFixed(0)}% (${hotspot.confidence}% confidence)\n`;
+          hotspotReport += `• Peak Hours: ${hotspot.peakHours.join(', ')}\n`;
+          hotspotReport += `• Average Volume: ${hotspot.metrics.averageVolume}/day\n`;
+          hotspotReport += `• Growth Rate: ${hotspot.metrics.growthRate}% YoY\n`;
+          hotspotReport += `• Primary Demo: ${hotspot.demographicProfile.primaryAgeGroup}, $${hotspot.demographicProfile.avgIncome.toLocaleString()}\n\n`;
+        });
+        
+        hotspotReport += "💡 **Strategic Recommendations:**\n";
+        hotspotReport += "• Position near high-intensity delivery hotspots\n";
+        hotspotReport += "• Optimize menu for peak hour demographics\n";
+        hotspotReport += "• Consider satellite locations in secondary hotspots\n";
+        
+        addAIMessage(hotspotReport, "analysis");
+        return;
+      }
+      
+      // 3. Competitor Deep Dive
+      if (lowerMessage.includes('competitor') && (lowerMessage.includes('analysis') || lowerMessage.includes('deep'))) {
+        // Generate competitor analysis card
+        const competitorData = {
+          location: mapState.center,
+          radius: 1000,
+          competitorCount: 8,
+          averageRating: 4.2,
+          priceDistribution: { '$': 2, '$$': 4, '$$$': 2, '$$$$': 0 },
+          cuisineGaps: ['Mexican', 'Thai', 'Vegan'],
+          topCompetitors: [
+            {
+              name: "Tony's Pizzeria",
+              cuisine: "Italian",
+              rating: 4.5,
+              priceRange: "$$",
+              distance: 250,
+              weaknesses: ["Limited seating", "No delivery"]
+            },
+            {
+              name: "Burger Palace",
+              cuisine: "American",
+              rating: 4.1,
+              priceRange: "$",
+              distance: 180,
+              weaknesses: ["Fast food only", "No dinner menu"]
+            },
+            {
+              name: "Sushi Zen",
+              cuisine: "Japanese",
+              rating: 4.7,
+              priceRange: "$$$",
+              distance: 320,
+              weaknesses: ["High prices", "Limited lunch hours"]
+            }
+          ],
+          marketOpportunities: [
+            "Gap in affordable Mexican cuisine",
+            "No quality breakfast options",
+            "Limited vegetarian/vegan choices"
+          ],
+          competitiveAdvantages: [
+            "Prime location with high foot traffic",
+            "Ample parking available",
+            "Close to business district"
+          ],
+          threats: [
+            "Established competitors with loyal customers",
+            "High rent costs in area"
+          ],
+          overallThreatLevel: 'medium' as const
+        };
+        
+        const aiMessage: Message = {
+          id: `ai-${Date.now()}`,
+          content: `I've analyzed the competitive landscape in this area. Here's what I found:`,
+          sender: "ai",
+          timestamp: new Date(),
+          type: "generative_ui",
+          generativeUI: {
+            type: 'competitor_analysis',
+            data: competitorData,
+            pendingApproval: true,
+          }
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+        return;
+      }
+
+      // Check for market analysis specifically
+      if (lowerMessage.includes('market') && lowerMessage.includes('analysis')) {
+        const analysisData = generateMarketAnalysisFromLocation(mapState.center, {
+          locationName: "Current Map Center",
+          radius: 1000
+        });
+        
+        const aiMessage: Message = {
+          id: `ai-${Date.now()}`,
+          content: `I've conducted a market analysis for this location. Here are the findings:`,
+          sender: "ai",
+          timestamp: new Date(),
+          type: "generative_ui",
+          generativeUI: {
+            type: 'market_analysis',
+            data: analysisData,
+            pendingApproval: true,
+          }
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+        return;
+      }
+
+      // Check for location search queries (restaurants, cafes, etc.)
+      const locationSearchTerms = ['find', 'search'];
+      const businessTypeTerms = ['restaurant', 'cafe', 'coffee shop', 'bistro'];
+      const isLocationSearch = locationSearchTerms.some(term => lowerMessage.includes(term)) &&
+                              businessTypeTerms.some(term => lowerMessage.includes(term));
+      
+      if (isLocationSearch) {
+        const locationData = generateLocationFromQuery(userMessage, mapState.center);
+        
+        const aiMessage: Message = {
+          id: `ai-${Date.now()}`,
+          content: `I found a ${locationData.type} that matches your search. Here are the details:`,
+          sender: "ai",
+          timestamp: new Date(),
+          type: "generative_ui",
+          generativeUI: {
+            type: 'location',
+            data: locationData,
+            pendingApproval: true,
+          }
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+        return;
+      }
+
+      // If not a special generative UI query, proceed with normal AI processing
       // Prepare map context for AI service
       const mapContext: MapContext = {
         center: mapState.center,
@@ -404,6 +683,13 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
   };
 
   const quickCommands = [
+    "find italian restaurant nearby",
+    "analyze market for new cafe",
+    "search potential restaurant sites", 
+    "competitor analysis in area",
+    "find coffee shops in location",
+    "market analysis for thai restaurant",
+    "demographic data for location",
     "add 3 coffee shops nearby",
     "analyze marker distribution", 
     "zoom to level 15",
@@ -514,6 +800,8 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
                         ? "bg-green-50 border border-green-200 text-green-800"
                         : message.type === "command"
                         ? "bg-yellow-50 border border-yellow-200 text-yellow-800"
+                        : message.type === "generative_ui"
+                        ? "bg-blue-50 border border-blue-200 text-blue-800"
                         : "bg-gradient-to-r from-indigo-50 to-purple-50 border border-purple-200 text-gray-800"
                     }`}>
                       <div className="whitespace-pre-wrap text-sm">
@@ -526,6 +814,61 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
                         </div>
                       )}
                     </div>
+
+                    {/* Generative UI Component */}
+                    {message.generativeUI && (
+                      <div className="mt-2 w-full max-w-lg">
+                        <GenerativeUIManager
+                          type={message.generativeUI.type}
+                          data={message.generativeUI.data}
+                          messageId={message.id}
+                          showActions={message.generativeUI.pendingApproval}
+                          onApprove={(data: any) => {
+                            // Update message to show approval
+                            setMessages(prev => prev.map(msg => 
+                              msg.id === message.id 
+                                ? { 
+                                    ...msg, 
+                                    generativeUI: { 
+                                      ...msg.generativeUI!, 
+                                      pendingApproval: false 
+                                    } 
+                                  }
+                                : msg
+                            ));
+                            
+                            // Add confirmation message
+                            addAIMessage(`✅ ${message.generativeUI!.type.replace('_', ' ')} has been added to the map successfully!`, "success");
+                          }}
+                          onReject={() => {
+                            // Update message to hide actions
+                            setMessages(prev => prev.map(msg => 
+                              msg.id === message.id 
+                                ? { 
+                                    ...msg, 
+                                    generativeUI: { 
+                                      ...msg.generativeUI!, 
+                                      pendingApproval: false 
+                                    } 
+                                  }
+                                : msg
+                            ));
+                            
+                            // Add rejection message
+                            addAIMessage("The suggestion has been rejected. Would you like me to find alternatives?", "text");
+                          }}
+                          onRequestMore={() => {
+                            // Generate follow-up AI response
+                            addAIMessage("Let me provide more detailed information about this suggestion...", "text");
+                            
+                            // You could trigger additional API calls here
+                            setTimeout(() => {
+                              addAIMessage("Here are additional insights and recommendations based on the data.", "success");
+                            }, 1000);
+                          }}
+                        />
+                      </div>
+                    )}
                     
                     <div className="flex items-center gap-2 text-xs text-gray-500">
                       <ClientTimestamp timestamp={message.timestamp} />

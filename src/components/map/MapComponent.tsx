@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
 import {
   ZoomIn,
   ZoomOut,
@@ -14,6 +15,9 @@ import {
   Settings,
   ChevronDown,
   ChevronUp,
+  Circle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useSharedState } from "../shared/SharedStateProvider";
 import mapboxgl from 'mapbox-gl';
@@ -28,6 +32,7 @@ const MapComponent = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const bufferCircleRef = useRef<string | null>(null); // Store circle layer ID
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [showTools, setShowTools] = useState(false);
 
@@ -41,6 +46,10 @@ const MapComponent = () => {
     clearMarkers,
     setActiveMarkerType,
     setMode,
+    setBufferRadius,
+    setBufferCenter,
+    toggleBufferRadius,
+    setBufferOpacity,
   } = useSharedState();
 
   // Initialize Mapbox map
@@ -85,7 +94,227 @@ const MapComponent = () => {
     };
   }, []);
 
+  // Synchronize markers from shared state with Mapbox map
+  useEffect(() => {
+    if (!mapRef.current || !isMapLoaded) return;
+
+    const map = mapRef.current;
+    const currentMarkers = markersRef.current;
+
+    // Get current marker IDs
+    const currentMarkerIds = new Set(currentMarkers.keys());
+    const stateMarkerIds = new Set(mapState.markers.map(m => m.id));
+
+    // Remove markers that are no longer in state
+    for (const markerId of currentMarkerIds) {
+      if (!stateMarkerIds.has(markerId)) {
+        const marker = currentMarkers.get(markerId);
+        if (marker) {
+          marker.remove();
+          currentMarkers.delete(markerId);
+        }
+      }
+    }
+
+    // Add or update markers from state
+    for (const stateMarker of mapState.markers) {
+      if (!currentMarkers.has(stateMarker.id)) {
+        // Create new marker
+        const markerElement = document.createElement('div');
+        markerElement.className = 'marker';
+        markerElement.style.cssText = `
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          color: white;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        `;
+
+        // Set marker color and icon based on type
+        switch (stateMarker.type) {
+          case 'restaurant':
+            markerElement.style.backgroundColor = '#dc2626'; // red
+            markerElement.innerHTML = '🍽️';
+            break;
+          case 'competitor':
+            markerElement.style.backgroundColor = '#ea580c'; // orange
+            markerElement.innerHTML = '⚔️';
+            break;
+          case 'business':
+            markerElement.style.backgroundColor = '#7c3aed'; // purple
+            markerElement.innerHTML = '🏢';
+            break;
+          case 'poi':
+            markerElement.style.backgroundColor = '#059669'; // green
+            markerElement.innerHTML = '📍';
+            break;
+          case 'location':
+            markerElement.style.backgroundColor = '#0ea5e9'; // blue
+            markerElement.innerHTML = '📍';
+            break;
+          default:
+            markerElement.style.backgroundColor = '#6b7280'; // gray
+            markerElement.innerHTML = '📍';
+        }
+
+        const marker = new mapboxgl.Marker(markerElement)
+          .setLngLat([stateMarker.position.lng, stateMarker.position.lat])
+          .addTo(map);
+
+        // Add popup if there's title or description
+        if (stateMarker.title || stateMarker.description) {
+          const popup = new mapboxgl.Popup({ offset: 25 })
+            .setHTML(`
+              <div style="min-width: 200px;">
+                <h3 style="margin: 0 0 8px 0; font-weight: bold; color: #1f2937;">
+                  ${stateMarker.title || 'Untitled'}
+                </h3>
+                ${stateMarker.description ? `
+                  <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                    ${stateMarker.description}
+                  </p>
+                ` : ''}
+                <div style="margin-top: 8px; font-size: 12px; color: #9ca3af;">
+                  Type: ${stateMarker.type}
+                  <br>
+                  Coordinates: ${stateMarker.position.lat.toFixed(4)}, ${stateMarker.position.lng.toFixed(4)}
+                </div>
+              </div>
+            `);
+          marker.setPopup(popup);
+        }
+
+        currentMarkers.set(stateMarker.id, marker);
+      }
+    }
+  }, [mapState.markers, isMapLoaded]);
+
+  // Synchronize map view with shared state
+  useEffect(() => {
+    if (!mapRef.current || !isMapLoaded) return;
+
+    const map = mapRef.current;
+    const currentCenter = map.getCenter();
+    const currentZoom = map.getZoom();
+
+    // Update center if different
+    if (Math.abs(currentCenter.lat - mapState.center.lat) > 0.001 || 
+        Math.abs(currentCenter.lng - mapState.center.lng) > 0.001) {
+      map.setCenter([mapState.center.lng, mapState.center.lat]);
+    }
+
+    // Update zoom if different
+    if (Math.abs(currentZoom - mapState.zoom) > 0.1) {
+      map.setZoom(mapState.zoom);
+    }
+  }, [mapState.center, mapState.zoom, isMapLoaded]);
+
+  // Buffer circle visualization effect
+  useEffect(() => {
+    if (!mapRef.current || !isMapLoaded) return;
+
+    const map = mapRef.current;
+    const circleLayerId = 'buffer-circle';
+    const circleSourceId = 'buffer-circle-source';
+
+    // Remove existing circle if it exists
+    if (map.getLayer(circleLayerId)) {
+      map.removeLayer(circleLayerId);
+    }
+    if (map.getSource(circleSourceId)) {
+      map.removeSource(circleSourceId);
+    }
+
+    // Add circle if buffer radius should be shown
+    if (mapState.showBufferRadius && mapState.bufferCenter) {
+      // Create a circle using turf.js-like approach
+      const center = [mapState.bufferCenter.lng, mapState.bufferCenter.lat];
+      const radiusInKm = mapState.bufferRadius / 1000; // Convert meters to km
+      
+      // Simple circle approximation (64 points)
+      const points = [];
+      const steps = 64;
+      for (let i = 0; i < steps; i++) {
+        const angle = (i * 360) / steps;
+        const dx = radiusInKm * Math.cos((angle * Math.PI) / 180);
+        const dy = radiusInKm * Math.sin((angle * Math.PI) / 180);
+        
+        // Approximate conversion from km to degrees (rough approximation)
+        const lat = mapState.bufferCenter.lat + (dy / 111.0);
+        const lng = mapState.bufferCenter.lng + (dx / (111.0 * Math.cos((mapState.bufferCenter.lat * Math.PI) / 180)));
+        
+        points.push([lng, lat]);
+      }
+      // Close the circle
+      points.push(points[0]);
+
+      const circleGeoJSON = {
+        type: 'geojson' as const,
+        data: {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Polygon' as const,
+            coordinates: [points]
+          },
+          properties: {}
+        }
+      };
+
+      // Add source and layer (check if they don't already exist)
+      if (!map.getSource(circleSourceId)) {
+        map.addSource(circleSourceId, circleGeoJSON);
+      } else {
+        // Update existing source
+        (map.getSource(circleSourceId) as mapboxgl.GeoJSONSource).setData(circleGeoJSON.data);
+      }
+      
+      if (!map.getLayer(circleLayerId)) {
+        map.addLayer({
+          id: circleLayerId,
+          type: 'fill',
+          source: circleSourceId,
+          paint: {
+            'fill-color': '#3b82f6', // Blue color
+            'fill-opacity': mapState.bufferOpacity,
+            'fill-outline-color': '#1d4ed8'
+          }
+        });
+      } else {
+        // Update opacity if layer exists
+        map.setPaintProperty(circleLayerId, 'fill-opacity', mapState.bufferOpacity);
+      }
+
+      // Add border
+      if (!map.getLayer(`${circleLayerId}-border`)) {
+        map.addLayer({
+          id: `${circleLayerId}-border`,
+          type: 'line',
+          source: circleSourceId,
+          paint: {
+            'line-color': '#1d4ed8',
+            'line-width': 2,
+            'line-opacity': 0.8
+          }
+        });
+      }
+
+      bufferCircleRef.current = circleLayerId;
+    }
+  }, [mapState.showBufferRadius, mapState.bufferCenter, mapState.bufferRadius, mapState.bufferOpacity, isMapLoaded]);
+
   const handleMapClick = useCallback(async (lat: number, lng: number) => {
+    // If buffer radius is shown, allow clicking to reposition it
+    if (mapState.showBufferRadius && !mapState.activeMarkerType) {
+      setBufferCenter({ lat, lng });
+      return;
+    }
+    
     if (!mapState.activeMarkerType) return;
 
     await addMarker({
@@ -204,6 +433,61 @@ const MapComponent = () => {
               <Trash2 className="h-3 w-3 mr-1" />
               Clear
             </Button>
+            
+            <div className="w-full h-px bg-gray-200 my-1" />
+            
+            {/* Buffer Radius Controls */}
+            <div className="w-full space-y-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant={mapState.showBufferRadius ? "default" : "outline"}
+                  onClick={toggleBufferRadius}
+                  className="text-xs px-2 py-1 h-6"
+                >
+                  <Circle className="h-3 w-3 mr-1" />
+                  Buffer
+                </Button>
+                <Badge variant="outline" className="px-1 text-[10px]">
+                  {mapState.bufferRadius}m
+                </Badge>
+              </div>
+              
+              {mapState.showBufferRadius && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[10px] text-gray-600 block mb-1">Radius (m)</label>
+                    <Slider
+                      value={[mapState.bufferRadius]}
+                      onValueChange={(value) => setBufferRadius(value[0])}
+                      min={50}
+                      max={5000}
+                      step={50}
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-600 block mb-1">Opacity</label>
+                    <Slider
+                      value={[mapState.bufferOpacity * 100]}
+                      onValueChange={(value) => setBufferOpacity(value[0] / 100)}
+                      min={10}
+                      max={80}
+                      step={5}
+                      className="w-full"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setBufferCenter({ lat: mapState.center.lat, lng: mapState.center.lng })}
+                    className="text-xs px-2 py-1 h-6 w-full"
+                  >
+                    Center on Map
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -223,13 +507,25 @@ const MapComponent = () => {
               ✚ Click to add {mapState.activeMarkerType}
             </div>
           )}
+          
+          {mapState.showBufferRadius && !mapState.activeMarkerType && (
+            <div className="bg-purple-500 text-white px-2 py-1 rounded text-xs">
+              ⭕ Click to position buffer center
+            </div>
+          )}
         </div>
 
         {/* Mapbox Container */}
         <div 
           ref={mapContainerRef} 
           className="absolute inset-0 w-full h-full"
-          style={{ cursor: mapState.activeMarkerType ? "crosshair" : "default" }}
+          style={{ 
+            cursor: mapState.activeMarkerType 
+              ? "crosshair" 
+              : mapState.showBufferRadius && !mapState.activeMarkerType 
+                ? "pointer" 
+                : "default" 
+          }}
         />
 
         {/* Loading Overlay */}

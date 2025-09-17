@@ -1,0 +1,73 @@
+
+> dev:ui
+> next dev --port 54217 --hostname 0.0.0.0
+
+  ▲ Next.js 14.2.23
+  - Local:        http://localhost:54217
+  - Network:      http://0.0.0.0:54217
+
+ ✓ Starting...
+ ✓ Ready in 2.1s
+ ○ Compiling / ...
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled / in 8.9s (724 modules)
+ GET / 200 in 9260ms
+ ✓ Compiled in 745ms (344 modules)
+ GET / 200 in 71ms
+ ⨯ ./src/components/map/MapComponent.tsx
+Error: 
+  [31mx[0m Expected ';', '}' or <eof>
+     ,-[[36;1;4m/workspace/bitebase-ai/src/components/map/MapComponent.tsx[0m:303:1]
+ [2m303[0m |           }
+ [2m304[0m |         });
+ [2m305[0m |       }
+ [2m306[0m |           'line-opacity': 0.8
+     : [31;1m          ^^^^^^^|^^^^^^[0m[33;1m^[0m
+     :                  [31;1m`-- [31;1mThis is the expression part of an expression statement[0m[0m
+ [2m307[0m |         }
+ [2m308[0m |       });
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/components/map/MapComponent.tsx
+./src/app/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ○ Compiling /_error ...
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled /_error in 3s (927 modules)
+ GET / 500 in 5540ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET / 200 in 125ms
+ ✓ Compiled in 2s (927 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET / 200 in 228ms
+ ✓ Compiled in 1046ms (927 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET / 200 in 119ms
+ ✓ Compiled in 934ms (927 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET / 200 in 102ms
+ ✓ Compiled in 828ms (927 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET / 200 in 234ms
+ ✓ Compiled in 857ms (927 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET / 200 in 172ms
+ ✓ Compiled in 670ms (927 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET / 200 in 197ms
+ ✓ Compiled in 482ms (927 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET / 200 in 74ms
+ ✓ Compiled in 1501ms (927 modules)
+ ✓ Compiled in 624ms (529 modules)
+ ✓ Compiled in 540ms (529 modules)
+ ✓ Compiled in 812ms (529 modules)
+ ✓ Compiled in 637ms (529 modules)
+ ✓ Compiled in 1961ms (929 modules)
+ GET / 200 in 165ms
