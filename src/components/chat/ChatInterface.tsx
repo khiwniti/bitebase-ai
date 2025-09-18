@@ -25,14 +25,10 @@ import {
   Code, 
   Layers, 
   History, 
-  Trash2,
   Copy,
   Download,
   RefreshCw,
-  Sparkles,
   Terminal,
-  Eye,
-  EyeOff,
   Wifi,
   WifiOff,
 } from "lucide-react";
@@ -158,7 +154,6 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
 
   const [inputValue, setInputValue] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showCapabilities, setShowCapabilities] = useState(false);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -702,76 +697,6 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
 
   return (
     <Card className={`flex flex-col h-full bg-white overflow-hidden ${className}`}>
-      <CardHeader className="flex-shrink-0 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 text-white py-2 px-3 rounded-t-xl">
-        <div className="flex items-center justify-between">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold flex items-center gap-2 truncate">
-              <Bot className="h-4 w-4 flex-shrink-0" />
-              AI Assistant
-            </h2>
-            <p className="text-xs opacity-90 flex items-center gap-2 mt-1 truncate">
-              {mapState.isSyncing ? (
-                <>
-                  <RefreshCw className="h-3 w-3 animate-spin flex-shrink-0" />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-3 w-3 flex-shrink-0" />
-                  {mapState.markers.length} markers • {mapState.zoom.toFixed(1)}x
-                </>
-              )}
-            </p>
-          </div>
-          <div className="flex gap-1 flex-shrink-0">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-white hover:bg-white/20 p-1 h-6 w-6"
-              onClick={() => setShowCapabilities(!showCapabilities)}
-            >
-              {showCapabilities ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-white hover:bg-white/20 p-1 h-6 w-6"
-              onClick={clearChat}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-
-      {/* Capabilities Panel */}
-      {showCapabilities && (
-        <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-          <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-            <Zap className="h-4 w-4" />
-            AI Capabilities
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {AI_CAPABILITIES.map((capability, index) => (
-              <div key={index} className="bg-white p-3 rounded-lg border">
-                <h4 className="font-medium text-xs text-gray-800 mb-1">{capability.name}</h4>
-                <p className="text-xs text-gray-600 mb-2">{capability.description}</p>
-                <div className="space-y-1">
-                  {capability.examples.slice(0, 2).map((example, i) => (
-                    <button
-                      key={i}
-                      className="block text-xs text-blue-600 hover:text-blue-800 hover:underline text-left"
-                      onClick={() => handleSuggestionClick(example)}
-                    >
-                      "{example}"
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <CardContent className="flex-grow p-0 overflow-hidden">
         <ScrollArea className="h-full p-4">
