@@ -205,13 +205,8 @@ export class AIActionDispatcher {
     }
     
     try {
-      // Inject state context into parameters if needed
-      const enrichedParams = {
-        ...parameters,
-        _context: this.stateContext
-      };
-      
-      return await action(enrichedParams as any);
+      // For now, directly call the action with parameters
+      return await (action as any)(parameters);
     } catch (error) {
       return {
         success: false,

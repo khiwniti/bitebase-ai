@@ -46,7 +46,7 @@ export function LocationCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const { addMarker, addRestaurant } = useSharedState();
 
-  const getTypeColor = (type: string) => {
+  const getTypeColor = (type?: string) => {
     switch (type) {
       case 'restaurant': return 'bg-green-100 text-green-800';
       case 'competitor': return 'bg-red-100 text-red-800';
@@ -125,7 +125,7 @@ export function LocationCard({
             </CardDescription>
           </div>
           <Badge className={`ml-2 ${getTypeColor(location.type)} flex-shrink-0`}>
-            {location.type.replace('_', ' ')}
+            {location.type?.replace('_', ' ') || 'Unknown'}
           </Badge>
         </div>
 

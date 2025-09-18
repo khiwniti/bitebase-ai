@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ import {
   Building2,
   Coffee,
   Utensils,
+  FileText,
 } from "lucide-react";
 
 interface LandingPageProps {
@@ -29,6 +31,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
   onNavigateToResearch,
   onNavigateToChat,
 }) => {
+  const router = useRouter();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   const workspaceTemplates = [
@@ -113,6 +116,15 @@ const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => router.push('/reports')}
+                className="flex items-center space-x-2"
+              >
+                <FileText className="h-4 w-4" />
+                <span>Reports Dashboard</span>
+              </Button>
               <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
                 Documentation
               </Button>

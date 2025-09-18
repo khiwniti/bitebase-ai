@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "../ui/card";
 import { Input } from "../ui/input";
@@ -9,13 +9,9 @@ import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { Textarea } from "../ui/textarea";
 import { useSharedState } from "../shared/SharedStateProvider";
+import { useReports } from "../../contexts/ReportsContext";
 import { aiService, type AIServiceResponse, type MapContext } from "../../lib/ai-service";
-import { 
-  GenerativeUIManager, 
-  generateLocationFromQuery, 
-  generateMarketAnalysisFromLocation,
-  type GenerativeUIProps 
-} from "../generative/GenerativeUIManager";
+import { type GenerativeUIProps } from "../generative/GenerativeUIManager";
 import { 
   Send, 
   Bot, 
@@ -32,6 +28,13 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
+
+// Lazy load heavy components for better performance
+const GenerativeUIManager = lazy(() => 
+  import("../generative/GenerativeUIManager").then(module => ({
+    default: module.GenerativeUIManager
+  }))
+);
 
 // Client-only timestamp component to prevent hydration issues
 function ClientTimestamp({ timestamp }: { timestamp: Date }) {
@@ -66,6 +69,7 @@ interface Message {
 interface ChatInterfaceProps {
   className?: string;
   initialMessage?: string;
+  reportId?: string;
 }
 
 interface AICapability {
@@ -128,19 +132,36 @@ const AI_CAPABILITIES: AICapability[] = [
   }
 ];
 
-export default function ChatInterface({ className = "", initialMessage }: ChatInterfaceProps) {
+export default function ChatInterface({ className = "", initialMessage, reportId }: ChatInterfaceProps) {
+  const { currentReport, addChatMessage, updateReport } = useReports();
+  
+  // Memoized state to prevent unnecessary re-renders
   const [messages, setMessages] = useState<Message[]>([]);
-
   const [inputValue, setInputValue] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isGenerativeUIReady, setIsGenerativeUIReady] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Enhanced shared state integration
+  // Optimized chat history loading with memoization
+  const formattedMessages = useMemo(() => {
+    if (!currentReport?.chatHistory) return [];
+    return currentReport.chatHistory.map(msg => ({
+      ...msg,
+      type: 'text' as const
+    }));
+  }, [currentReport?.chatHistory]);
+
+  // Load chat history from current report
+  useEffect(() => {
+    setMessages(formattedMessages);
+  }, [formattedMessages]);
+
+  // Enhanced shared state integration for seamless report-chat connectivity
   const { 
     mapState,
     addMarker,
@@ -157,12 +178,19 @@ export default function ChatInterface({ className = "", initialMessage }: ChatIn
     getMarkersInBounds,
     exportState,
     forceSync,
+    conductMarketAnalysis,
+    generateLocationInsights,
   } = useSharedState();
 
-  // Auto-scroll to bottom
-  useEffect(() => {
+  // Optimized auto-scroll with throttling
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(timeoutId);
+  }, [messages, scrollToBottom]);
 
   // Enhanced state change monitoring
   useEffect(() => {
@@ -212,6 +240,14 @@ export default function ChatInterface({ className = "", initialMessage }: ChatIn
     };
     setMessages(prev => [...prev, newMessage]);
     
+    // Save to reports context
+    if (currentReport && reportId) {
+      addChatMessage(reportId, {
+        content,
+        sender: "user"
+      });
+    }
+    
     // Add to command history
     if (type === "command" || content.startsWith("/")) {
       setCommandHistory(prev => {
@@ -220,7 +256,7 @@ export default function ChatInterface({ className = "", initialMessage }: ChatIn
       });
       setHistoryIndex(-1);
     }
-  }, []);
+  }, [currentReport, reportId, addChatMessage]);
 
   const addAIMessage = useCallback((content: string, type: Message["type"] = "text", metadata?: Record<string, any>, component?: React.ComponentType<any>) => {
     const newMessage: Message = {
@@ -233,7 +269,15 @@ export default function ChatInterface({ className = "", initialMessage }: ChatIn
       component,
     };
     setMessages(prev => [...prev, newMessage]);
-  }, [mapState.markers.length]);
+    
+    // Save to reports context
+    if (currentReport && reportId) {
+      addChatMessage(reportId, {
+        content,
+        sender: "ai"
+      });
+    }
+  }, [mapState.markers.length, currentReport, reportId, addChatMessage]);
 
   const processAICommand = useCallback(async (userMessage: string): Promise<void> => {
     try {
@@ -456,25 +500,33 @@ export default function ChatInterface({ className = "", initialMessage }: ChatIn
 
       // Check for market analysis specifically
       if (lowerMessage.includes('market') && lowerMessage.includes('analysis')) {
-        const analysisData = generateMarketAnalysisFromLocation(mapState.center, {
-          locationName: "Current Map Center",
-          radius: 1000
-        });
-        
-        const aiMessage: Message = {
-          id: `ai-${Date.now()}`,
-          content: `I've conducted a market analysis for this location. Here are the findings:`,
-          sender: "ai",
-          timestamp: new Date(),
-          type: "generative_ui",
-          generativeUI: {
-            type: 'market_analysis',
-            data: analysisData,
-            pendingApproval: true,
-          }
-        };
-        
-        setMessages(prev => [...prev, aiMessage]);
+        try {
+          const analysisData = await conductMarketAnalysis(mapState.center, 1000);
+          
+          const aiMessage: Message = {
+            id: `ai-${Date.now()}`,
+            content: `I've conducted a market analysis for this location. Here are the findings:`,
+            sender: "ai",
+            timestamp: new Date(),
+            type: "generative_ui",
+            generativeUI: {
+              type: 'market_analysis',
+              data: analysisData,
+              pendingApproval: true,
+            }
+          };
+          
+          setMessages(prev => [...prev, aiMessage]);
+        } catch (error) {
+          console.error('Market analysis failed:', error);
+          const errorMessage: Message = {
+            id: `ai-${Date.now()}`,
+            content: "I apologize, but I encountered an error while generating the market analysis. Please try again.",
+            sender: "ai",
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, errorMessage]);
+        }
         return;
       }
 
@@ -485,22 +537,33 @@ export default function ChatInterface({ className = "", initialMessage }: ChatIn
                               businessTypeTerms.some(term => lowerMessage.includes(term));
       
       if (isLocationSearch) {
-        const locationData = generateLocationFromQuery(userMessage, mapState.center);
-        
-        const aiMessage: Message = {
-          id: `ai-${Date.now()}`,
-          content: `I found a ${locationData.type} that matches your search. Here are the details:`,
-          sender: "ai",
-          timestamp: new Date(),
-          type: "generative_ui",
-          generativeUI: {
-            type: 'location',
-            data: locationData,
-            pendingApproval: true,
-          }
-        };
-        
-        setMessages(prev => [...prev, aiMessage]);
+        try {
+          const locationData = await generateLocationInsights(mapState.center);
+          
+          const aiMessage: Message = {
+            id: `ai-${Date.now()}`,
+            content: `I found a location that matches your search. Here are the details:`,
+            sender: "ai",
+            timestamp: new Date(),
+            type: "generative_ui",
+            generativeUI: {
+              type: 'location',
+              data: locationData,
+              pendingApproval: true,
+            }
+          };
+          
+          setMessages(prev => [...prev, aiMessage]);
+        } catch (error) {
+          console.error('Location search failed:', error);
+          const errorMessage: Message = {
+            id: `ai-${Date.now()}`,
+            content: "I apologize, but I encountered an error while searching for locations. Please try again.",
+            sender: "ai",
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, errorMessage]);
+        }
         return;
       }
 

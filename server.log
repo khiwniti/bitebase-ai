@@ -1,45 +1,13 @@
-
-> dev
-> concurrently "bun dev:ui" "bun dev:agent" "bun dev:copilot" --names ui,agent,copilot --prefix-colors blue,green,yellow --kill-others --port 54217 --hostname 0.0.0.0
-
-[ui] $ next dev
-[agent] $ cd agent && bun x @langchain/langgraph-cli dev --port 8123 --no-browser
-[copilot] $ bun x copilot-api@latest start --github-token $GITHUB_TOKEN --port 4141
-[agent] Resolving dependencies
-[copilot] Resolving dependencies
-[ui]   ▲ Next.js 14.2.23
-[ui]   - Local:        http://localhost:3000
-[ui] 
-[ui]  ✓ Starting...
-[copilot] Resolved, downloaded and extracted [112]
-[copilot] Saved lockfile
-[ui]  ✓ Ready in 3s
-[agent] Resolved, downloaded and extracted [738]
-[agent] Saved lockfile
-[agent] [31merror[39m:   [31m[2m▪[22m[0m [0m[31mError: ENOENT: no such file or directory, open '/workspace/bitebase-ai/agent/.env'[39m
-[copilot] ℹ Using VSCode version: 1.104.0
-[copilot] ℹ Using provided GitHub token
-[copilot] 
-[copilot]  ERROR  Failed to get Copilot token
-[copilot] 
-[copilot]     at getCopilotToken (/tmp/bunx-0-copilot-api@latest/node_modules/copilot-api/dist/main.js:125:26)
-[copilot]     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-[copilot]     at async setupCopilotToken (/tmp/bunx-0-copilot-api@latest/node_modules/copilot-api/dist/main.js:235:32)
-[copilot]     at async runServer (/tmp/bunx-0-copilot-api@latest/node_modules/copilot-api/dist/main.js:1118:2)
-[copilot]     at async runCommand (/tmp/bunx-0-copilot-api@latest/node_modules/citty/dist/index.mjs:316:16)
-[copilot]     at async runCommand (/tmp/bunx-0-copilot-api@latest/node_modules/citty/dist/index.mjs:307:11)
-[copilot]     at async runMain (/tmp/bunx-0-copilot-api@latest/node_modules/citty/dist/index.mjs:445:7)
-[copilot]     at async /tmp/bunx-0-copilot-api@latest/node_modules/copilot-api/dist/main.js:1240:1 
-[copilot] 
-[copilot] 
-[copilot] 
-[copilot]  ERROR  Failed to get Copilot token
-[copilot] 
-[copilot] error: script "dev:copilot" exited with code 1
-[copilot] bun dev:copilot exited with code 1
---> Sending SIGTERM to other processes..
-[agent] error: script "dev:agent" was terminated by signal SIGTERM (Polite quit request)
-[agent] bun dev:agent exited with code SIGTERM
---> Sending SIGTERM to other processes..
-[ui] [?25h
-[ui] bun dev:ui exited with code SIGTERM
+ ⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use 0.0.0.0:53614
+    at Server.setupListenHandle [as _listen2] (node:net:1817:16)
+    at listenInCluster (node:net:1865:12)
+    at doListen (node:net:2014:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:83:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 53614
+}
+[?25h

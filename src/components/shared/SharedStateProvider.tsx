@@ -339,7 +339,7 @@ interface GenerativeUICommand {
   result?: any;
 }
 
-interface MapState {
+export interface MapState {
   // Core map state
   zoom: number;
   center: { lat: number; lng: number };

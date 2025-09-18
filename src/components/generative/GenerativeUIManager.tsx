@@ -1,19 +1,33 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, Suspense } from 'react';
 import { LocationCard } from './LocationCard';
 import { MarketAnalysisCard } from './MarketAnalysisCard';
 import { CompetitorAnalysisCard } from './CompetitorAnalysisCard';
+import CustomReportLayoutManager, { ReportLayout } from './CustomReportLayoutManager';
 import { useSharedState } from '@/components/shared/SharedStateProvider';
 import { restaurantDataService, Restaurant } from '@/services/restaurant-data-service';
 import { GeoPoint } from '@/lib/geospatial-analysis';
+import { Card, CardHeader, CardContent } from '../ui/card';
+import { Loader2 } from 'lucide-react';
+
+// Performance optimized loading component
+const LoadingFallback = () => (
+  <Card className="w-full">
+    <CardContent className="flex items-center justify-center py-8">
+      <Loader2 className="h-6 w-6 animate-spin mr-2" />
+      <span className="text-sm text-gray-600">Loading component...</span>
+    </CardContent>
+  </Card>
+);
 
 export interface GenerativeUIProps {
-  type: 'location' | 'market_analysis' | 'competitor_analysis' | 'demographic_data' | 'revenue_projection';
+  type: 'location' | 'market_analysis' | 'competitor_analysis' | 'demographic_data' | 'revenue_projection' | 'custom_report';
   data: any;
   onApprove?: (data: any) => void;
   onReject?: () => void;
   onRequestMore?: () => void;
   messageId?: string;
   showActions?: boolean;
+  layoutConfig?: ReportLayout;
 }
 
 export function GenerativeUIManager({ 
@@ -23,7 +37,8 @@ export function GenerativeUIManager({
   onReject, 
   onRequestMore,
   messageId,
-  showActions = true 
+  showActions = true,
+  layoutConfig 
 }: GenerativeUIProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { 
@@ -58,8 +73,7 @@ export function GenerativeUIManager({
               1000,
               { 
                 cuisineType: approvedData.cuisine,
-                restaurantType: approvedData.type,
-                nearbyRestaurants
+                restaurantType: approvedData.type
               }
             );
             console.log('Auto-generated market analysis with real data:', analysis);
@@ -96,7 +110,7 @@ export function GenerativeUIManager({
           limit: 10
         });
 
-        const insights = await generateLocationInsights(data.coordinates, { restaurantData });
+        const insights = await generateLocationInsights(data.coordinates);
         console.log('Generated additional insights with real data:', insights);
       } catch (error) {
         console.error('Failed to generate additional insights:', error);
@@ -104,61 +118,91 @@ export function GenerativeUIManager({
     }
   }, [onRequestMore, type, data, generateLocationInsights]);
 
-  // Render the appropriate component based on type
+  // Render the appropriate component based on type with optimized loading
   switch (type) {
     case 'location':
       return (
-        <LocationCard
-          location={data}
-          onApprove={handleApprove}
-          onReject={handleReject}
-          onRequestMoreInfo={handleRequestMore}
-          showActions={showActions && !isProcessing}
-        />
+        <Suspense fallback={<LoadingFallback />}>
+          <LocationCard
+            location={data}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onRequestMoreInfo={handleRequestMore}
+            showActions={showActions && !isProcessing}
+          />
+        </Suspense>
       );
 
     case 'market_analysis':
       return (
-        <MarketAnalysisCard
-          analysis={data}
-          onApprove={handleApprove}
-          onReject={handleReject}
-          onRequestDetails={handleRequestMore}
-          showActions={showActions && !isProcessing}
-        />
+        <Suspense fallback={<LoadingFallback />}>
+          <MarketAnalysisCard
+            analysis={data}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onRequestDetails={handleRequestMore}
+            showActions={showActions && !isProcessing}
+          />
+        </Suspense>
       );
 
     case 'competitor_analysis':
       return (
-        <CompetitorAnalysisCard
-          analysis={data}
-          onApprove={handleApprove}
-          onReject={handleReject}
-          onViewDetails={handleRequestMore}
-          showActions={showActions && !isProcessing}
-        />
+        <Suspense fallback={<LoadingFallback />}>
+          <CompetitorAnalysisCard
+            analysis={data}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onViewDetails={handleRequestMore}
+            showActions={showActions && !isProcessing}
+          />
+        </Suspense>
       );
 
     case 'demographic_data':
       return (
-        <DemographicDataCard
-          data={data}
-          onApprove={handleApprove}
-          onReject={handleReject}
-          onViewDetails={handleRequestMore}
-          showActions={showActions && !isProcessing}
-        />
+        <Suspense fallback={<LoadingFallback />}>
+          <DemographicDataCard
+            data={data}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onViewDetails={handleRequestMore}
+            showActions={showActions && !isProcessing}
+          />
+        </Suspense>
       );
 
     case 'revenue_projection':
       return (
-        <RevenueProjectionCard
-          projection={data}
-          onApprove={handleApprove}
-          onReject={handleReject}
-          onViewDetails={handleRequestMore}
-          showActions={showActions && !isProcessing}
-        />
+        <Suspense fallback={<LoadingFallback />}>
+          <RevenueProjectionCard
+            projection={data}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onViewDetails={handleRequestMore}
+            showActions={showActions && !isProcessing}
+          />
+        </Suspense>
+      );
+
+    case 'custom_report':
+      return (
+        <Suspense fallback={<LoadingFallback />}>
+          <CustomReportLayoutManager
+            reportId={messageId || `report-${Date.now()}`}
+            initialLayout={layoutConfig}
+            onLayoutChange={(layout) => {
+              console.log('Layout changed:', layout);
+            }}
+            onSave={(layout) => {
+              console.log('Layout saved:', layout);
+              if (onApprove) {
+                onApprove({ layout, reportData: data });
+              }
+            }}
+            className="w-full"
+          />
+        </Suspense>
       );
 
     default:

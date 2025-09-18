@@ -61,6 +61,16 @@ export interface AttributionData {
   channelType: string;
 }
 
+export interface RetentionStrategy {
+  id: string;
+  name: string;
+  description: string;
+  targetSegment: CustomerSegment;
+  expectedImpact: number;
+  cost: number;
+  timeline: string;
+}
+
 export interface CustomerLifecycleAnalysis {
   id: string;
   timestamp: Date;

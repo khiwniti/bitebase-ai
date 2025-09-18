@@ -98,18 +98,6 @@ export const getConfig = () => {
         }
       };
     
-    case 'staging':
-      return {
-        ...ProductionConfig,
-        dataServices: {
-          ...ProductionConfig.dataServices,
-          restaurantAPI: {
-            ...ProductionConfig.dataServices.restaurantAPI,
-            cacheTimeout: 1 * 60 * 1000 // Shorter cache for testing
-          }
-        }
-      };
-    
     case 'development':
       return {
         ...ProductionConfig,

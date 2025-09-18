@@ -1,10 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense, lazy } from "react";
 import LandingPage from "./LandingPage";
-import ResearchWorkflow from "./ResearchWorkflow";
-import ChatInterface from "../chat/ChatInterface";
-import MapComponent from "../map/MapComponent";
+import { LoadingSpinner } from "../ui/loading-spinner";
+
+// Lazy load heavy components to improve initial load time
+const LazyResearchWorkflow = lazy(() => import("./ResearchWorkflow"));
+const LazyChatInterface = lazy(() => import("../chat/ChatInterface"));
+
+// Use lightweight map in development, full map in production
+const LazyMapComponent = lazy(() => 
+  process.env.NODE_ENV === 'development' 
+    ? import("../map/DevMapPlaceholder")
+    : import("../map/MapComponent")
+);
 
 type ViewType = "landing" | "research" | "chat";
 
@@ -40,10 +49,19 @@ const StudioApp: React.FC = () => {
         );
       case "research":
         return (
-          <ResearchWorkflow
-            onNavigateBack={navigateToLanding}
-            onNavigateToChat={navigateToChat}
-          />
+          <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="text-center">
+                <LoadingSpinner />
+                <p className="mt-2 text-gray-600">Loading Research Workspace...</p>
+              </div>
+            </div>
+          }>
+            <LazyResearchWorkflow
+              onNavigateBack={navigateToLanding}
+              onNavigateToChat={navigateToChat}
+            />
+          </Suspense>
         );
       case "chat":
         return (
@@ -86,12 +104,30 @@ const StudioApp: React.FC = () => {
               <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4 min-h-0 overflow-hidden p-4">
                 {/* Map Component - Takes up 2/3 of the space */}
                 <div className="lg:col-span-2 min-h-0 overflow-hidden">
-                  <MapComponent />
+                  <Suspense fallback={
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
+                      <div className="text-center">
+                        <LoadingSpinner />
+                        <p className="mt-2 text-sm text-gray-600">Loading Map...</p>
+                      </div>
+                    </div>
+                  }>
+                    <LazyMapComponent />
+                  </Suspense>
                 </div>
                 
                 {/* Chat Interface - Takes up 1/3 of the space */}
                 <div className="lg:col-span-1 min-h-0 overflow-hidden">
-                  <ChatInterface initialMessage={initialChatMessage} />
+                  <Suspense fallback={
+                    <div className="w-full h-full flex items-center justify-center bg-white rounded-lg border">
+                      <div className="text-center">
+                        <LoadingSpinner />
+                        <p className="mt-2 text-sm text-gray-600">Loading Chat...</p>
+                      </div>
+                    </div>
+                  }>
+                    <LazyChatInterface initialMessage={initialChatMessage} />
+                  </Suspense>
                 </div>
               </div>
             </div>
