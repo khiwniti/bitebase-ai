@@ -696,7 +696,7 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
   ];
 
   return (
-    <Card className={`flex flex-col h-full bg-white overflow-hidden ${className}`}>
+    <Card className={`flex flex-col h-full overflow-hidden ${className}`}>
 
       <CardContent className="flex-grow p-0 overflow-hidden">
         <ScrollArea className="h-full p-4">
@@ -870,7 +870,7 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
         </div>
       </div>
 
-      <CardFooter className="p-4 pt-2 border-t">
+      <CardFooter className="p-4 pt-2">
         <form onSubmit={handleSubmit} className="flex w-full gap-2">
           <div className="flex-grow relative">
             <Input
