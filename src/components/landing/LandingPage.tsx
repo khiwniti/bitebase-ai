@@ -94,9 +94,9 @@ const LandingPage: React.FC<LandingPageProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="border-b border-gray-800 bg-black/20 backdrop-blur-sm">
+      <div className="border-b border-gray-200 bg-white">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -106,20 +106,20 @@ const LandingPage: React.FC<LandingPageProps> = ({
                   alt="BiteBase Studio"
                   className="w-8 h-8"
                 />
-                <h1 className="text-xl font-semibold text-white">BiteBase Studio</h1>
-                <Badge variant="secondary" className="text-xs">
+                <h1 className="text-xl font-semibold text-gray-900">BiteBase Studio</h1>
+                <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800 border-orange-200">
                   preview
                 </Badge>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white">
+              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
                 Documentation
               </Button>
-              <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white">
+              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
                 Support
               </Button>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
                 <span className="text-xs font-medium text-white">K</span>
               </div>
             </div>
@@ -132,37 +132,37 @@ const LandingPage: React.FC<LandingPageProps> = ({
         {/* Welcome Section */}
         <div className="mb-12">
           <div className="mb-6">
-            <span className="text-3xl font-light text-white mb-2 block">Hello, Khiw</span>
-            <span className="text-lg text-gray-400">Welcome to your restaurant intelligence platform</span>
+            <span className="text-3xl font-light text-gray-900 mb-2 block">Hello, Khiw</span>
+            <span className="text-lg text-gray-600">Welcome to your restaurant intelligence platform</span>
           </div>
         </div>
 
         {/* AI Chat Section */}
         <div className="mb-16">
-          <h2 className="text-2xl font-semibold text-white mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
             Start with AI Intelligence
           </h2>
-          <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardContent className="p-8">
               <div className="flex items-center space-x-4 mb-6">
-                <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                <div className="p-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg">
                   <Brain className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-white">BiteBase AI Assistant</h3>
-                  <p className="text-gray-400">Get instant insights about your restaurant business</p>
+                  <h3 className="text-lg font-medium text-gray-900">BiteBase AI Assistant</h3>
+                  <p className="text-gray-600">Get instant insights about your restaurant business</p>
                 </div>
               </div>
               
               <div className="relative">
-                <div className="border border-gray-600 rounded-lg bg-gray-900/50 p-4 mb-4">
+                <div className="border border-gray-200 rounded-lg bg-gray-50 p-4 mb-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-400 text-sm">
+                    <span className="text-gray-600 text-sm">
                       Try: "Analyze coffee shop market in downtown Seattle" or "Generate customer segmentation report"
                     </span>
                     <Button
                       onClick={onNavigateToChat}
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                      className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white"
                     >
                       Start Chat
                       <ChevronRight className="w-4 h-4 ml-2" />
@@ -177,11 +177,11 @@ const LandingPage: React.FC<LandingPageProps> = ({
                   <Button
                     key={index}
                     variant="ghost"
-                    className="justify-start h-auto p-4 text-left border border-gray-600 hover:border-gray-500 bg-gray-900/30 hover:bg-gray-800/50"
+                    className="justify-start h-auto p-4 text-left border border-gray-200 hover:border-orange-300 bg-white hover:bg-orange-50"
                     onClick={action.action}
                   >
-                    <action.icon className="w-5 h-5 mr-3 text-blue-400" />
-                    <span className="text-white">{action.label}</span>
+                    <action.icon className="w-5 h-5 mr-3 text-orange-600" />
+                    <span className="text-gray-900">{action.label}</span>
                   </Button>
                 ))}
               </div>
@@ -192,8 +192,8 @@ const LandingPage: React.FC<LandingPageProps> = ({
         {/* Templates Section */}
         <div className="mb-16">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-semibold text-white">Intelligence Workspaces</h2>
-            <Button variant="outline" size="sm" className="border-gray-600 text-gray-300 hover:text-white">
+            <h2 className="text-2xl font-semibold text-gray-900">Intelligence Workspaces</h2>
+            <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-50">
               View All Templates
             </Button>
           </div>
@@ -202,8 +202,8 @@ const LandingPage: React.FC<LandingPageProps> = ({
             {workspaceTemplates.map((template) => (
               <Card
                 key={template.id}
-                className={`bg-gray-800/50 border-gray-700 backdrop-blur-sm cursor-pointer transition-all duration-300 hover:border-gray-600 ${
-                  hoveredCard === template.id ? "scale-105 shadow-2xl" : ""
+                className={`bg-white border-gray-200 shadow-sm cursor-pointer transition-all duration-300 hover:shadow-md hover:border-orange-300 ${
+                  hoveredCard === template.id ? "transform scale-[1.02] shadow-lg border-orange-400" : ""
                 }`}
                 onMouseEnter={() => setHoveredCard(template.id)}
                 onMouseLeave={() => setHoveredCard(null)}
@@ -212,24 +212,24 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                      <div className="p-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg">
                         <template.icon className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg text-white">{template.title}</CardTitle>
-                        <p className="text-sm text-gray-400">{template.subtitle}</p>
+                        <CardTitle className="text-lg text-gray-900">{template.title}</CardTitle>
+                        <p className="text-sm text-gray-600">{template.subtitle}</p>
                       </div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-gray-400" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-300 mb-4">{template.description}</p>
+                  <p className="text-gray-700 mb-4">{template.description}</p>
                   <div className="grid grid-cols-2 gap-2">
                     {template.features.map((feature, index) => (
                       <div key={index} className="flex items-center space-x-2">
-                        <Zap className="w-3 h-3 text-blue-400" />
-                        <span className="text-xs text-gray-400">{feature}</span>
+                        <Zap className="w-3 h-3 text-orange-600" />
+                        <span className="text-xs text-gray-600">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -241,7 +241,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
 
         {/* Recent Workspaces */}
         <div>
-          <h2 className="text-2xl font-semibold text-white mb-6">Recent Intelligence Reports</h2>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6">Recent Intelligence Reports</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
@@ -265,23 +265,23 @@ const LandingPage: React.FC<LandingPageProps> = ({
             ].map((workspace, index) => (
               <Card
                 key={index}
-                className="bg-gray-800/30 border-gray-700 backdrop-blur-sm cursor-pointer hover:border-gray-600 transition-colors"
+                className="bg-white border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-orange-300 transition-all"
                 onClick={workspace.status === "Completed" ? onNavigateToResearch : onNavigateToChat}
               >
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
                       <BarChart3 className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-white font-medium">{workspace.title}</h3>
-                      <p className="text-gray-400 text-sm">{workspace.subtitle}</p>
+                      <h3 className="text-gray-900 font-medium">{workspace.title}</h3>
+                      <p className="text-gray-600 text-sm">{workspace.subtitle}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <Badge
                       variant={workspace.status === "Completed" ? "default" : "secondary"}
-                      className="text-xs"
+                      className={`text-xs ${workspace.status === "Completed" ? "bg-green-100 text-green-800 border-green-200" : "bg-orange-100 text-orange-800 border-orange-200"}`}
                     >
                       {workspace.status}
                     </Badge>

@@ -100,9 +100,9 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="border-b border-gray-800 bg-black/20 backdrop-blur-sm">
+      <div className="border-b border-gray-200 bg-white">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -110,18 +110,18 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={onNavigateBack}
-                className="text-gray-300 hover:text-white"
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Studio
               </Button>
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
                   <BarChart3 className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-semibold text-white">MarketMapper AI</h1>
-                  <p className="text-sm text-gray-400">Deep Market Research Report</p>
+                  <h1 className="text-lg font-semibold text-gray-900">MarketMapper AI</h1>
+                  <p className="text-sm text-gray-600">Deep Market Research Report</p>
                 </div>
               </div>
             </div>
@@ -130,12 +130,12 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={onNavigateToChat}
-                className="border-gray-600 text-gray-300 hover:text-white"
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 Switch to Chat
               </Button>
               <Button
-                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white"
                 disabled={activeStep < 3}
               >
                 Publish Report
@@ -150,10 +150,10 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Progress */}
           <div className="lg:col-span-1">
-            <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm">
+            <Card className="bg-white border-gray-200 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <Clock className="w-5 h-5 mr-2 text-blue-400" />
+                <CardTitle className="text-gray-900 flex items-center">
+                  <Clock className="w-5 h-5 mr-2 text-orange-600" />
                   Research Progress
                 </CardTitle>
               </CardHeader>
@@ -162,16 +162,16 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
                   <div key={step.id} className="flex items-start space-x-3">
                     <div className="flex-shrink-0 mt-1">
                       {step.status === "completed" ? (
-                        <CheckCircle className="w-5 h-5 text-green-400" />
+                        <CheckCircle className="w-5 h-5 text-green-600" />
                       ) : step.status === "active" ? (
-                        <div className="w-5 h-5 border-2 border-blue-400 rounded-full animate-pulse" />
+                        <div className="w-5 h-5 border-2 border-orange-500 rounded-full animate-pulse" />
                       ) : (
-                        <div className="w-5 h-5 border-2 border-gray-600 rounded-full" />
+                        <div className="w-5 h-5 border-2 border-gray-300 rounded-full" />
                       )}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-white font-medium text-sm">{step.title}</h3>
-                      <p className="text-gray-400 text-xs">{step.description}</p>
+                      <h3 className="text-gray-900 font-medium text-sm">{step.title}</h3>
+                      <p className="text-gray-600 text-xs">{step.description}</p>
                     </div>
                   </div>
                 ))}
@@ -179,14 +179,14 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
             </Card>
 
             {/* Quick Actions */}
-            <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm mt-6">
+            <Card className="bg-white border-gray-200 shadow-sm mt-6">
               <CardHeader>
-                <CardTitle className="text-white text-lg">Quick Actions</CardTitle>
+                <CardTitle className="text-gray-900 text-lg">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-gray-300 hover:text-white border border-gray-600 hover:border-gray-500"
+                  className="w-full justify-start text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-orange-300 hover:bg-orange-50"
                   onClick={handleGenerateReport}
                   disabled={isGenerating}
                 >
@@ -199,14 +199,14 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
                 </Button>
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-gray-300 hover:text-white border border-gray-600 hover:border-gray-500"
+                  className="w-full justify-start text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-orange-300 hover:bg-orange-50"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export Data
                 </Button>
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-gray-300 hover:text-white border border-gray-600 hover:border-gray-500"
+                  className="w-full justify-start text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-orange-300 hover:bg-orange-50"
                   onClick={onNavigateToChat}
                 >
                   <Target className="w-4 h-4 mr-2" />
@@ -219,10 +219,10 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
           {/* Right Column - Research Components */}
           <div className="lg:col-span-2">
             <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-white mb-2">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
                 Seattle Coffee Shop Market Analysis
               </h2>
-              <p className="text-gray-400">
+              <p className="text-gray-600">
                 Comprehensive market research report for downtown Seattle coffee market
               </p>
             </div>
@@ -231,21 +231,21 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
               {researchComponents.map((component, index) => (
                 <Card
                   key={index}
-                  className="bg-gray-800/50 border-gray-700 backdrop-blur-sm"
+                  className="bg-white border-gray-200 shadow-sm"
                 >
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                        <div className="p-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg">
                           <component.icon className="w-5 h-5 text-white" />
                         </div>
-                        <CardTitle className="text-white text-lg">
+                        <CardTitle className="text-gray-900 text-lg">
                           {component.title}
                         </CardTitle>
                       </div>
                       <Badge
                         variant={component.status === "completed" ? "default" : "secondary"}
-                        className="text-xs"
+                        className={`text-xs ${component.status === "completed" ? "bg-green-100 text-green-800 border-green-200" : "bg-orange-100 text-orange-800 border-orange-200"}`}
                       >
                         {component.status === "completed" ? "Ready" : "Analyzing"}
                       </Badge>
@@ -254,16 +254,16 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
                   <CardContent>
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-gray-400 text-sm">Progress</span>
-                        <span className="text-gray-300 text-sm">{component.progress}%</span>
+                        <span className="text-gray-600 text-sm">Progress</span>
+                        <span className="text-gray-700 text-sm">{component.progress}%</span>
                       </div>
                       <Progress value={component.progress} className="h-2" />
                     </div>
                     <div className="space-y-2">
                       {component.insights.map((insight, i) => (
                         <div key={i} className="flex items-center space-x-2">
-                          <CheckCircle className="w-3 h-3 text-green-400 flex-shrink-0" />
-                          <span className="text-gray-300 text-sm">{insight}</span>
+                          <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                          <span className="text-gray-700 text-sm">{insight}</span>
                         </div>
                       ))}
                     </div>
@@ -273,45 +273,45 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
             </div>
 
             {/* Research Insights */}
-            <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm mt-6">
+            <Card className="bg-white border-gray-200 shadow-sm mt-6">
               <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <AlertCircle className="w-5 h-5 mr-2 text-yellow-400" />
+                <CardTitle className="text-gray-900 flex items-center">
+                  <AlertCircle className="w-5 h-5 mr-2 text-orange-600" />
                   Key Insights
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h3 className="text-white font-medium mb-3">Market Opportunities</h3>
+                    <h3 className="text-gray-900 font-medium mb-3">Market Opportunities</h3>
                     <ul className="space-y-2">
-                      <li className="text-gray-300 text-sm flex items-start">
-                        <span className="w-2 h-2 bg-green-400 rounded-full mt-2 mr-3 flex-shrink-0" />
+                      <li className="text-gray-700 text-sm flex items-start">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0" />
                         High demand for specialty coffee in tech district
                       </li>
-                      <li className="text-gray-300 text-sm flex items-start">
-                        <span className="w-2 h-2 bg-green-400 rounded-full mt-2 mr-3 flex-shrink-0" />
+                      <li className="text-gray-700 text-sm flex items-start">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0" />
                         Limited competition in premium segment
                       </li>
-                      <li className="text-gray-300 text-sm flex items-start">
-                        <span className="w-2 h-2 bg-green-400 rounded-full mt-2 mr-3 flex-shrink-0" />
+                      <li className="text-gray-700 text-sm flex items-start">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0" />
                         Growing remote work culture driving demand
                       </li>
                     </ul>
                   </div>
                   <div>
-                    <h3 className="text-white font-medium mb-3">Risk Factors</h3>
+                    <h3 className="text-gray-900 font-medium mb-3">Risk Factors</h3>
                     <ul className="space-y-2">
-                      <li className="text-gray-300 text-sm flex items-start">
-                        <span className="w-2 h-2 bg-yellow-400 rounded-full mt-2 mr-3 flex-shrink-0" />
+                      <li className="text-gray-700 text-sm flex items-start">
+                        <span className="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3 flex-shrink-0" />
                         High commercial real estate costs
                       </li>
-                      <li className="text-gray-300 text-sm flex items-start">
-                        <span className="w-2 h-2 bg-yellow-400 rounded-full mt-2 mr-3 flex-shrink-0" />
+                      <li className="text-gray-700 text-sm flex items-start">
+                        <span className="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3 flex-shrink-0" />
                         Seasonal demand fluctuations
                       </li>
-                      <li className="text-gray-300 text-sm flex items-start">
-                        <span className="w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0" />
+                      <li className="text-gray-700 text-sm flex items-start">
+                        <span className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0" />
                         Strong competition from established chains
                       </li>
                     </ul>
