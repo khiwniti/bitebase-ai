@@ -696,9 +696,9 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
   ];
 
   return (
-    <Card className={`flex flex-col h-full overflow-hidden ${className}`}>
+    <Card className={`flex flex-col h-full overflow-hidden bg-transparent border-none shadow-none ${className}`}>
 
-      <CardContent className="flex-grow p-0 overflow-hidden">
+      <CardContent className="flex-grow p-0 overflow-hidden bg-transparent">
         <ScrollArea className="h-full p-4">
           <div className="space-y-4">
             {messages.map((message) => (
@@ -870,7 +870,7 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
         </div>
       </div>
 
-      <CardFooter className="p-4 pt-2">
+      <CardFooter className="p-4 pt-2 bg-transparent">
         <form onSubmit={handleSubmit} className="flex w-full gap-2">
           <div className="flex-grow relative">
             <Input
