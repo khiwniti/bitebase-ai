@@ -65,6 +65,7 @@ interface Message {
 
 interface ChatInterfaceProps {
   className?: string;
+  initialMessage?: string;
 }
 
 interface AICapability {
@@ -127,30 +128,8 @@ const AI_CAPABILITIES: AICapability[] = [
   }
 ];
 
-export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome-1",
-      content: "🚀 **Enhanced AI Map Assistant** is now online! I have full control over your map with advanced capabilities:",
-      sender: "ai",
-      timestamp: new Date(),
-      type: "success",
-    },
-    {
-      id: "welcome-2", 
-      content: "✨ **New Features:**\n• Real Mapbox integration with live updates\n• Generative UI component creation\n• Advanced command execution\n• Bulk operations & data analysis\n• History management with undo/redo\n• Real-time state synchronization",
-      sender: "ai",
-      timestamp: new Date(),
-      type: "text",
-    },
-    {
-      id: "welcome-3",
-      content: "🎯 Try commands like: *'add 3 coffee shops near current location'*, *'analyze marker distribution'*, or *'create a custom info panel'*",
-      sender: "ai", 
-      timestamp: new Date(),
-      type: "text",
-    }
-  ]);
+export default function ChatInterface({ className = "", initialMessage }: ChatInterfaceProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
 
   const [inputValue, setInputValue] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -610,6 +589,28 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
       addAIMessage(`⚠️ Failed to execute action: ${action.type}`, "error");
     }
   }, [addMarker, bulkAddMarkers, removeMarker, clearMarkers, updateZoom, updateCenter, addAIMessage]);
+
+  // Handle initial message from landing page
+  useEffect(() => {
+    if (initialMessage && messages.length === 0) {
+      // Add the user message
+      const userMessage: Message = {
+        id: `user-${Date.now()}`,
+        content: initialMessage,
+        sender: "user",
+        timestamp: new Date(),
+        type: "text",
+      };
+      
+      setMessages([userMessage]);
+      setIsProcessing(true);
+
+      // Process the message with AI
+      processAICommand(initialMessage).finally(() => {
+        setIsProcessing(false);
+      });
+    }
+  }, [initialMessage, messages.length, processAICommand]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

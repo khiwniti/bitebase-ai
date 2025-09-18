@@ -10,16 +10,22 @@ type ViewType = "landing" | "research" | "chat";
 
 const StudioApp: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>("landing");
+  const [initialChatMessage, setInitialChatMessage] = useState<string>("");
 
   const navigateToResearch = () => {
+    setInitialChatMessage(""); // Clear any initial message
     setCurrentView("research");
   };
 
-  const navigateToChat = () => {
+  const navigateToChat = (message?: string) => {
+    if (message) {
+      setInitialChatMessage(message);
+    }
     setCurrentView("chat");
   };
 
   const navigateToLanding = () => {
+    setInitialChatMessage(""); // Clear any initial message
     setCurrentView("landing");
   };
 
@@ -85,7 +91,7 @@ const StudioApp: React.FC = () => {
                 
                 {/* Chat Interface - Takes up 1/3 of the space */}
                 <div className="lg:col-span-1 min-h-0 overflow-hidden">
-                  <ChatInterface />
+                  <ChatInterface initialMessage={initialChatMessage} />
                 </div>
               </div>
             </div>

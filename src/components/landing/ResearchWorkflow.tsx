@@ -23,7 +23,7 @@ import {
 
 interface ResearchWorkflowProps {
   onNavigateBack: () => void;
-  onNavigateToChat: () => void;
+  onNavigateToChat: (message?: string) => void;
 }
 
 const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({

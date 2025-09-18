@@ -22,7 +22,7 @@ import {
 
 interface LandingPageProps {
   onNavigateToResearch: () => void;
-  onNavigateToChat: () => void;
+  onNavigateToChat: (message?: string) => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({
@@ -84,12 +84,12 @@ const LandingPage: React.FC<LandingPageProps> = ({
     {
       icon: Coffee,
       label: "Optimize menu pricing strategy",
-      action: onNavigateToChat,
+      action: () => onNavigateToChat("Optimize menu pricing strategy for my restaurant. Analyze current market trends and provide recommendations."),
     },
     {
       icon: Utensils,
       label: "Forecast customer demand patterns",
-      action: onNavigateToChat,
+      action: () => onNavigateToChat("Forecast customer demand patterns for my restaurant. Analyze seasonal trends and peak hours."),
     },
   ];
 
