@@ -273,7 +273,7 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
       
       // 1. Comprehensive Market Analysis
       if (lowerMessage.includes('comprehensive') && (lowerMessage.includes('analysis') || lowerMessage.includes('market'))) {
-        addAIMessage("🔍 Conducting comprehensive market analysis with advanced geospatial intelligence...", "loading");
+        addAIMessage("🔍 Conducting comprehensive market analysis with advanced geospatial intelligence...", "text");
         
         const query = {
           center: mapState.center,
@@ -375,7 +375,7 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
               addAIMessage("❌ Analysis rejected. Let me know if you'd like a different approach.", "text");
             },
             onRequestDetails: () => {
-              addAIMessage("🔍 Generating detailed breakdown...", "loading");
+              addAIMessage("🔍 Generating detailed breakdown...", "text");
             }
           })
         );
@@ -384,7 +384,7 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
       
       // 2. Hotspot Analysis
       if (lowerMessage.includes('hotspot') || (lowerMessage.includes('delivery') && lowerMessage.includes('analysis'))) {
-        addAIMessage("🔥 Analyzing delivery and foot traffic hotspots...", "loading");
+        addAIMessage("🔥 Analyzing delivery and foot traffic hotspots...", "text");
         
         const hotspots = await bitebaseApi.analyzeHotspots({
           center: mapState.center,
@@ -406,7 +406,7 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
         hotspotReport += "• Optimize menu for peak hour demographics\n";
         hotspotReport += "• Consider satellite locations in secondary hotspots\n";
         
-        addAIMessage(hotspotReport, "analysis");
+        addAIMessage(hotspotReport, "success");
         return;
       }
       

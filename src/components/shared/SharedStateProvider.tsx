@@ -17,7 +17,7 @@ type BusinessDayPart = "breakfast" | "brunch" | "lunch" | "afternoon" | "dinner"
 type MarketingChannel = "google_ads" | "facebook_ads" | "instagram" | "email" | "sms" | "loyalty_program" | "word_of_mouth" | "delivery_apps" | "local_partnerships";
 type CustomerSegment = "new_customers" | "regular_customers" | "vip_customers" | "at_risk_customers" | "champions" | "loyalists" | "potential_loyalists" | "cannot_lose_them";
 
-interface RestaurantData {
+export interface RestaurantData {
   id: string;
   name: string;
   type: RestaurantType;
@@ -66,7 +66,7 @@ interface FootTrafficData {
   repeatVisitorRate: number; // percentage
 }
 
-interface DemographicProfile {
+export interface DemographicProfile {
   id: string;
   coordinates: { lat: number; lng: number; };
   radius: number; // in meters
@@ -281,7 +281,7 @@ interface BusinessMetricsData {
   swotScore: number; // overall SWOT analysis score
 }
 
-interface MarketAnalysis {
+export interface MarketAnalysis {
   id: string;
   timestamp: Date;
   location: { lat: number; lng: number; };
@@ -634,6 +634,11 @@ const initialState: MapState = {
         seniors: 800,
         tourists: 500,
         locals: 7200,
+        millennials: 2800,
+        gen_z: 1200,
+        high_income: 1800,
+        middle_income: 4200,
+        budget_conscious: 2500,
       },
       diningFrequency: {
         daily: 2000,
@@ -1385,6 +1390,15 @@ export function SharedStateProvider({ children }: { children: React.ReactNode })
         showDemographics: true,
         showFootTraffic: false,
         showRevenueZones: false,
+        showDeliveryHotspots: false,
+        showMarketGaps: false,
+        showPriceComparison: false,
+        competitorThreatLevel: ["low", "medium", "high", "critical"],
+        marketPosition: ["leader", "challenger", "follower", "niche"],
+        minimumRating: 0,
+        maximumDistance: 5000,
+        dayPartFilter: [],
+        customerSegmentFilter: [],
       },
     }));
 
@@ -1426,6 +1440,8 @@ export function SharedStateProvider({ children }: { children: React.ReactNode })
     const averageSpend = restaurant.averageSpend || 25;
     const capacity = restaurant.capacity || 50;
     
+    const totalRevenue = Math.round(totalPopulation * 0.1 * averageSpend * 12);
+    
     return {
       monthlyRevenue: {
         "Jan": 18000, "Feb": 19000, "Mar": 22000, "Apr": 24000,
@@ -1433,7 +1449,7 @@ export function SharedStateProvider({ children }: { children: React.ReactNode })
         "Sep": 25000, "Oct": 23000, "Nov": 21000, "Dec": 25000
       },
       dailyAverage: Math.round((totalPopulation * 0.1 * averageSpend) / 30),
-      projectedAnnual: Math.round(totalPopulation * 0.1 * averageSpend * 12),
+      projectedAnnual: totalRevenue,
       costStructure: {
         food: 0.30,
         labor: 0.25,
@@ -1443,6 +1459,26 @@ export function SharedStateProvider({ children }: { children: React.ReactNode })
         other: 0.17,
       },
       profitMargin: 0.12,
+      // Enhanced revenue analytics
+      daily: { "2024-01-01": 800, "2024-01-02": 850, "2024-01-03": 900 },
+      monthly: { "Jan": 18000, "Feb": 19000, "Mar": 22000, "Apr": 24000 },
+      seasonal: { "Spring": 72000, "Summer": 87000, "Fall": 69000, "Winter": 62000 },
+      totalRevenue: totalRevenue,
+      averageOrderValue: averageSpend,
+      peakRevenueHours: ["12:00", "18:00", "19:00"],
+      revenueByDayPart: {
+        breakfast: 5000,
+        brunch: 8000,
+        lunch: 12000,
+        afternoon: 3000,
+        dinner: 15000,
+        late_night: 2000,
+      },
+      revenueGrowthRate: 5.2, // percentage
+      costOfGoodsSold: totalRevenue * 0.30,
+      operatingExpenses: totalRevenue * 0.70,
+      netProfit: totalRevenue * 0.12,
+      breakEvenPoint: 45, // orders per day
     };
   }, []);
 

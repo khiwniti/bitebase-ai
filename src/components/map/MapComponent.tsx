@@ -106,7 +106,7 @@ const MapComponent = () => {
     const stateMarkerIds = new Set(mapState.markers.map(m => m.id));
 
     // Remove markers that are no longer in state
-    for (const markerId of currentMarkerIds) {
+    for (const markerId of Array.from(currentMarkerIds)) {
       if (!stateMarkerIds.has(markerId)) {
         const marker = currentMarkers.get(markerId);
         if (marker) {

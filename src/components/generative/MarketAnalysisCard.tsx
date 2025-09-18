@@ -207,7 +207,7 @@ export function MarketAnalysisCard({
             <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
               <div>Population: {analysis.demographics.totalPopulation.toLocaleString()}</div>
               <div>Avg Income: ${analysis.demographics.avgIncome.toLocaleString()}</div>
-              <div className="col-span-2">Primary Age: {analysis.demographics.primaryAgeGroup}</div>
+              <div className="col-span-2">Primary Age: {Object.keys(analysis.demographics.primaryAgeGroups).join(', ')}</div>
             </div>
           </div>
         )}

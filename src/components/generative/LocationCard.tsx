@@ -83,24 +83,25 @@ export function LocationCard({
       if (location.type === 'restaurant' && location.cuisine) {
         await addRestaurant({
           name: location.name,
+          address: location.address || `${location.coordinates.lat}, ${location.coordinates.lng}`,
           type: 'casual_dining',
           cuisine: location.cuisine as any,
           priceRange: location.priceRange || '$$',
           averageSpend: location.averageSpend || 25,
           capacity: location.capacity || 50,
           operatingHours: {
-            monday: { open: "11:00", close: "22:00" },
-            tuesday: { open: "11:00", close: "22:00" },
-            wednesday: { open: "11:00", close: "22:00" },
-            thursday: { open: "11:00", close: "22:00" },
-            friday: { open: "11:00", close: "23:00" },
-            saturday: { open: "11:00", close: "23:00" },
-            sunday: { open: "12:00", close: "21:00" },
+            monday: { open: "11:00", close: "22:00", isOpen: true },
+            tuesday: { open: "11:00", close: "22:00", isOpen: true },
+            wednesday: { open: "11:00", close: "22:00", isOpen: true },
+            thursday: { open: "11:00", close: "22:00", isOpen: true },
+            friday: { open: "11:00", close: "23:00", isOpen: true },
+            saturday: { open: "11:00", close: "23:00", isOpen: true },
+            sunday: { open: "12:00", close: "21:00", isOpen: true },
           },
           coordinates: location.coordinates,
           rating: location.rating || 0,
           reviewCount: location.reviewCount || 0,
-          isCompetitor: location.type === 'competitor',
+          isCompetitor: false,
         });
       }
 
