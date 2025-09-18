@@ -43,7 +43,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
     },
     {
       id: "culinary-compass",
-      title: "Culinary Compass AI",
+      title: "BiteBase Intelligence",
       subtitle: "Restaurant Intelligence Chat",
       icon: MessageSquare,
       description: "Interactive AI assistant for restaurant analytics",

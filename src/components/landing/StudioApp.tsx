@@ -58,7 +58,7 @@ const StudioApp: React.FC = () => {
                         <span className="text-white text-sm">💬</span>
                       </div>
                       <div>
-                        <h1 className="text-lg font-semibold text-gray-900">Culinary Compass AI</h1>
+                        <h1 className="text-lg font-semibold text-gray-900">BiteBase Intelligence</h1>
                         <p className="text-sm text-gray-600">Restaurant Intelligence Chat with Map</p>
                       </div>
                     </div>
