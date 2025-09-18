@@ -1,49 +1,42 @@
-  ▲ Next.js 14.2.23
-  - Local:        http://localhost:53614
-  - Network:      http://0.0.0.0:53614
 
- ✓ Starting...
- ✓ Ready in 1720ms
- ○ Compiling / ...
-Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
-  npx update-browserslist-db@latest
-  Why you should do it regularly: https://github.com/browserslist/update-db#readme
- ✓ Compiled / in 6.6s (699 modules)
- GET / 200 in 7223ms
- ✓ Compiled in 587ms (338 modules)
- ✓ Compiled in 1351ms (690 modules)
- ✓ Compiled in 3.4s (740 modules)
- GET / 200 in 837ms
- ✓ Compiled in 1210ms (727 modules)
- ✓ Compiled in 785ms (727 modules)
- ✓ Compiled in 994ms (727 modules)
- ✓ Compiled in 1183ms (727 modules)
- ✓ Compiled in 1245ms (727 modules)
- ✓ Compiled in 1562ms (727 modules)
- ✓ Compiled in 573ms (727 modules)
- ✓ Compiled in 799ms (727 modules)
- ✓ Compiled in 858ms (727 modules)
- ✓ Compiled in 1070ms (727 modules)
- ✓ Compiled in 677ms (727 modules)
- ✓ Compiled in 1676ms (727 modules)
- GET / 200 in 203ms
- ✓ Compiled in 3.5s (727 modules)
- ✓ Compiled in 1077ms (727 modules)
- GET / 200 in 140ms
- ✓ Compiled in 1965ms (727 modules)
- ✓ Compiled in 1155ms (727 modules)
- ✓ Compiled in 822ms (727 modules)
- ✓ Compiled in 1372ms (727 modules)
- ✓ Compiled in 780ms (727 modules)
- ✓ Compiled in 842ms (727 modules)
- ✓ Compiled in 927ms (727 modules)
- ✓ Compiled in 805ms (727 modules)
- ✓ Compiled in 783ms (727 modules)
- ✓ Compiled in 874ms (727 modules)
- ✓ Compiled in 1258ms (727 modules)
- ✓ Compiled in 643ms (727 modules)
- GET / 200 in 175ms
- ✓ Compiled in 999ms (727 modules)
- GET / 200 in 232ms
- ✓ Compiled in 703ms (727 modules)
- GET / 200 in 85ms
+> dev
+> concurrently "bun dev:ui" "bun dev:agent" "bun dev:copilot" --names ui,agent,copilot --prefix-colors blue,green,yellow --kill-others
+
+[ui] $ next dev
+[copilot] $ bun x copilot-api@latest start --github-token $GITHUB_TOKEN --port 4141
+[agent] $ cd agent && bun x @langchain/langgraph-cli dev --port 8123 --no-browser
+[agent] Resolving dependencies
+[copilot] Resolving dependencies
+[copilot] Resolved, downloaded and extracted [2]
+[agent] Resolved, downloaded and extracted [2]
+[copilot] Saved lockfile
+[ui]   ▲ Next.js 14.2.23
+[ui]   - Local:        http://localhost:3000
+[ui] 
+[ui]  ✓ Starting...
+[copilot] ℹ Using VSCode version: 1.104.0
+[copilot] ℹ Using provided GitHub token
+[copilot] 
+[copilot]  ERROR  Failed to get Copilot token
+[copilot] 
+[copilot]     at getCopilotToken (/tmp/bunx-0-copilot-api@latest/node_modules/copilot-api/dist/main.js:125:26)
+[copilot]     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[copilot]     at async setupCopilotToken (/tmp/bunx-0-copilot-api@latest/node_modules/copilot-api/dist/main.js:235:32)
+[copilot]     at async runServer (/tmp/bunx-0-copilot-api@latest/node_modules/copilot-api/dist/main.js:1118:2)
+[copilot]     at async runCommand (/tmp/bunx-0-copilot-api@latest/node_modules/citty/dist/index.mjs:316:16)
+[copilot]     at async runCommand (/tmp/bunx-0-copilot-api@latest/node_modules/citty/dist/index.mjs:307:11)
+[copilot]     at async runMain (/tmp/bunx-0-copilot-api@latest/node_modules/citty/dist/index.mjs:445:7)
+[copilot]     at async /tmp/bunx-0-copilot-api@latest/node_modules/copilot-api/dist/main.js:1240:1 
+[copilot] 
+[copilot] 
+[copilot] 
+[copilot]  ERROR  Failed to get Copilot token
+[copilot] 
+[copilot] error: script "dev:copilot" exited with code 1
+[copilot] bun dev:copilot exited with code 1
+--> Sending SIGTERM to other processes..
+[agent] error: script "dev:agent" was terminated by signal SIGTERM (Polite quit request)
+[agent] bun dev:agent exited with code SIGTERM
+--> Sending SIGTERM to other processes..
+[ui] [?25h
+[ui] bun dev:ui exited with code SIGTERM

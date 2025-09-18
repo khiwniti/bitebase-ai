@@ -161,7 +161,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                       Try: "Analyze coffee shop market in downtown Seattle" or "Generate customer segmentation report"
                     </span>
                     <Button
-                      onClick={onNavigateToChat}
+                      onClick={() => onNavigateToChat()}
                       className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white"
                     >
                       Start Chat
@@ -207,7 +207,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 }`}
                 onMouseEnter={() => setHoveredCard(template.id)}
                 onMouseLeave={() => setHoveredCard(null)}
-                onClick={template.onClick}
+                onClick={() => template.onClick()}
               >
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
@@ -266,7 +266,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
               <Card
                 key={index}
                 className="bg-white border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-orange-300 transition-all"
-                onClick={workspace.status === "Completed" ? onNavigateToResearch : onNavigateToChat}
+                onClick={() => workspace.status === "Completed" ? onNavigateToResearch() : onNavigateToChat()}
               >
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-3 mb-3">
