@@ -153,12 +153,63 @@ export interface BusinessMatrix {
   lastUpdated: string;
 }
 
+// Agent Coordination State for Multi-Agent Systems
+export interface AgentCoordinationState {
+  activeAgents: string[];
+  agentStatus: Record<string, 'idle' | 'busy' | 'error' | 'completed'>;
+  agentCommunication: AgentMessage[];
+  coordinationMode: 'parallel' | 'sequential' | 'hybrid';
+  dependencyGraph: Record<string, string[]>;
+  resourceAllocation: Record<string, number>;
+}
+
+export interface AgentMessage {
+  fromAgent: string;
+  toAgent: string;
+  messageType: 'task_request' | 'task_response' | 'coordination' | 'status_update';
+  content: string;
+  timestamp: string;
+  priority: 'low' | 'medium' | 'high';
+}
+
 // Enhanced Deep Agent State for Market Research
 export const MarketResearchAgentState = Annotation.Root({
   // Core messaging
   messages: Annotation<BaseMessage[]>({
     reducer: (currentState: BaseMessage[], updateValue: BaseMessage[]) => currentState.concat(updateValue),
     default: () => [],
+  }),
+
+  // Multi-Agent Coordination Layer
+  agentCoordination: Annotation<AgentCoordinationState>({
+    reducer: (left: AgentCoordinationState | undefined, right: AgentCoordinationState | undefined) => {
+      if (!left) return right || {
+        activeAgents: [],
+        agentStatus: {},
+        agentCommunication: [],
+        coordinationMode: 'hybrid',
+        dependencyGraph: {},
+        resourceAllocation: {}
+      };
+      if (!right) return left;
+
+      return {
+        activeAgents: [...new Set([...left.activeAgents, ...right.activeAgents])],
+        agentStatus: { ...left.agentStatus, ...right.agentStatus },
+        agentCommunication: [...left.agentCommunication, ...right.agentCommunication],
+        coordinationMode: right.coordinationMode || left.coordinationMode,
+        dependencyGraph: { ...left.dependencyGraph, ...right.dependencyGraph },
+        resourceAllocation: { ...left.resourceAllocation, ...right.resourceAllocation }
+      };
+    },
+    default: () => ({
+      activeAgents: [],
+      agentStatus: {},
+      agentCommunication: [],
+      coordinationMode: 'hybrid',
+      dependencyGraph: {},
+      resourceAllocation: {}
+    }),
   }),
   
   // Task Planning & Progress Tracking
