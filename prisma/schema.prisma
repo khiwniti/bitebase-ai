@@ -1,0 +1,310 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User and session management
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  avatar      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  sessions    Session[]
+  reports     MarketReport[]
+  chatSessions ChatSession[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String   @unique
+  data      Json?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// Market research and reports
+model MarketReport {
+  id             String           @id @default(cuid())
+  title          String
+  description    String?
+  region         String
+  analysisType   AnalysisType
+  status         ReportStatus     @default(PENDING)
+  data           Json?
+  insights       String[]
+  recommendations String[]
+  metadata       Json?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  userId         String
+
+  // Relations
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryMarket DeliveryMarketAnalysis[]
+  customerBehavior CustomerBehaviorAnalysis[]
+  propertyMarket PropertyMarketAnalysis[]
+  accommodationDensity AccommodationDensityAnalysis[]
+  touristFlow    TouristFlowAnalysis[]
+
+  @@map("market_reports")
+}
+
+model DeliveryMarketAnalysis {
+  id            String   @id @default(cuid())
+  reportId      String
+  analysisType  String
+  region        String
+  businessType  String?
+  orderVolume   String?
+  data          Json
+  insights      String[]
+  recommendations String[]
+  createdAt     DateTime @default(now())
+
+  // Relations
+  report MarketReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("delivery_market_analysis")
+}
+
+model CustomerBehaviorAnalysis {
+  id               String   @id @default(cuid())
+  reportId         String
+  analysisType     String
+  region           String
+  customerSegment  String?
+  cuisineType      String?
+  timeframe        String
+  behaviorData     Json
+  insights         String[]
+  recommendations  String[]
+  createdAt        DateTime @default(now())
+
+  // Relations
+  report MarketReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("customer_behavior_analysis")
+}
+
+model PropertyMarketAnalysis {
+  id           String   @id @default(cuid())
+  reportId     String
+  analysisType String
+  propertyType String
+  location     String
+  region       String
+  sizeRange    String?
+  budget       String?
+  data         Json
+  insights     String[]
+  recommendations String[]
+  createdAt    DateTime @default(now())
+
+  // Relations
+  report MarketReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("property_market_analysis")
+}
+
+model AccommodationDensityAnalysis {
+  id                 String   @id @default(cuid())
+  reportId           String
+  analysisType       String
+  location           String
+  region             String
+  radius             Float?
+  accommodationType  String?
+  densityData        Json
+  insights           String[]
+  recommendations    String[]
+  createdAt          DateTime @default(now())
+
+  // Relations
+  report MarketReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("accommodation_density_analysis")
+}
+
+model TouristFlowAnalysis {
+  id          String   @id @default(cuid())
+  reportId    String
+  analysisType String
+  location    String
+  region      String
+  timeframe   String
+  visitorType String?
+  flowData    Json
+  insights    String[]
+  recommendations String[]
+  createdAt   DateTime @default(now())
+
+  // Relations
+  report MarketReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("tourist_flow_analysis")
+}
+
+// Chat and conversation management
+model ChatSession {
+  id        String      @id @default(cuid())
+  userId    String
+  title     String?
+  sessionId String      @unique
+  metadata  Json?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  // Relations
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id            String      @id @default(cuid())
+  sessionId     String
+  role          MessageRole
+  content       String
+  metadata      Json?
+  toolCalls     Json?
+  attachments   Json?
+  timestamp     DateTime    @default(now())
+
+  // Relations
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+// Deep agent system tracking
+model AgentExecution {
+  id          String            @id @default(cuid())
+  sessionId   String?
+  agentType   String
+  task        String
+  status      AgentStatus       @default(RUNNING)
+  startTime   DateTime          @default(now())
+  endTime     DateTime?
+  duration    Int?
+  result      Json?
+  error       String?
+  metadata    Json?
+
+  @@map("agent_executions")
+}
+
+model AgentMetrics {
+  id              String   @id @default(cuid())
+  agentType       String
+  operationType   String
+  successCount    Int      @default(0)
+  failureCount    Int      @default(0)
+  averageDuration Float?
+  lastExecution   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([agentType, operationType])
+  @@map("agent_metrics")
+}
+
+// Market data cache for performance
+model MarketDataCache {
+  id        String   @id @default(cuid())
+  cacheKey  String   @unique
+  data      Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("market_data_cache")
+}
+
+// Business intelligence data
+model CompetitorData {
+  id          String   @id @default(cuid())
+  name        String
+  location    Json     // {lat, lng, address}
+  region      String
+  cuisineType String[]
+  priceRange  String
+  rating      Float?
+  reviewCount Int?
+  data        Json     // Additional competitor metrics
+  lastUpdated DateTime @default(now())
+
+  @@map("competitor_data")
+}
+
+model MarketTrend {
+  id         String   @id @default(cuid())
+  region     String
+  category   String
+  trend      String
+  value      Float
+  unit       String?
+  period     String
+  source     String?
+  confidence Float?
+  createdAt  DateTime @default(now())
+
+  @@map("market_trends")
+}
+
+// Enums
+enum AnalysisType {
+  DELIVERY_MARKET
+  CUSTOMER_BEHAVIOR
+  PROPERTY_MARKET
+  ACCOMMODATION_DENSITY
+  TOURIST_FLOW
+  COMPETITOR_ANALYSIS
+  MARKET_GAPS
+  HOTSPOT_ANALYSIS
+}
+
+enum ReportStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  ARCHIVED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  TOOL
+}
+
+enum AgentStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}

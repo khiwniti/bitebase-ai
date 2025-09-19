@@ -13,6 +13,22 @@ const ChatInterface = dynamic(() => import('@/components/chat/ChatInterface'), {
   loading: () => <div className="flex items-center justify-center h-screen">Loading chat...</div>
 });
 
+"use client";
+
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useReports } from '@/contexts/ReportsContext';
+import { SharedStateProvider } from '@/components/shared/SharedStateProvider';
+import { AppLayout } from '@/components/ui/app-layout';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, FileText, History, Plus, MessageSquare } from 'lucide-react';
+
+const ChatInterface = dynamic(() => import('@/components/chat/ChatInterface'), { 
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-96">Loading chat...</div>
+});
+
 export default function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,26 +61,90 @@ export default function ChatPage() {
     setIsLoading(false);
   }, [searchParams, currentReport, getReportById, setCurrentReport, createReport, router]);
 
+  const handleNewChat = () => {
+    const newReport = createReport(
+      `Research Report ${new Date().toLocaleDateString()}`,
+      'New research analysis session'
+    );
+    router.push(`/chat?reportId=${newReport.id}`);
+  };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
+      <AppLayout title="AI Chat" subtitle="Loading...">
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+        </div>
+      </AppLayout>
     );
   }
 
   if (!currentReport) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">No report selected</p>
-          <Button onClick={() => router.push('/reports')}>
-            Go to Reports
+      <AppLayout 
+        title="AI Chat" 
+        subtitle="No chat session selected"
+        actions={
+          <Button onClick={handleNewChat} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700">
+            <Plus className="w-4 h-4 mr-2" />
+            New Chat
           </Button>
+        }
+      >
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600 mb-4">No chat session selected</p>
+            <Button 
+              onClick={handleNewChat}
+              className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+            >
+              Start New Chat
+            </Button>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
+
+  return (
+    <AppLayout 
+      title={currentReport.title}
+      subtitle={`${currentReport.chatHistory.length} messages • Restaurant Intelligence Chat`}
+      breadcrumbs={[
+        { label: "Home", href: "/" },
+        { label: "AI Chat", href: "/chat" },
+        { label: currentReport.title }
+      ]}
+      actions={
+        <div className="flex items-center space-x-3">
+          <Button 
+            variant="outline"
+            onClick={() => router.push(`/reports/${currentReport.id}`)}
+            className="flex items-center space-x-2"
+          >
+            <FileText className="h-4 w-4" />
+            <span>View Report</span>
+          </Button>
+          <Button 
+            onClick={handleNewChat}
+            className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Chat
+          </Button>
+        </div>
+      }
+      className="h-screen overflow-hidden"
+    >
+      <div className="h-full -m-6">
+        <SharedStateProvider>
+          <ChatInterface reportId={currentReport.id} />
+        </SharedStateProvider>
+      </div>
+    </AppLayout>
+  );
+}
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">

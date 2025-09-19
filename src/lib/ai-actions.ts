@@ -6,6 +6,8 @@ import type { CompetitorAnalysis, HotspotAnalysis, MarketGap } from '../features
 import type { MenuAnalysis, SalesForecasting } from '../features/product/types';
 import type { PriceBenchmarkingAnalysis, PriceElasticityAnalysis } from '../features/price/types';
 import type { MarketingCampaign, SentimentAnalysis } from '../features/promotion/types';
+import { DatabaseServices } from './database-services';
+import type { AnalysisType, ReportStatus, AgentStatus } from '../generated/prisma';
 
 // Action parameter types for type safety
 export interface ActionParameters {
@@ -262,9 +264,23 @@ export class AIActionDispatcher {
   private eventSource: EventSource | null = null;
   private statusCallbacks: Map<string, (event: StreamEvent) => void> = new Map();
   private activeSessionId: string | null = null;
+  private currentUserId: string | null = null;
+  private currentChatSessionId: string | null = null;
 
   constructor() {
     this.initializeActions();
+  }
+
+  setUserId(userId: string) {
+    this.currentUserId = userId;
+  }
+
+  setChatSessionId(sessionId: string) {
+    this.currentChatSessionId = sessionId;
+  }
+
+  private getCurrentUserId(): string {
+    return this.currentUserId || 'anonymous-user';
   }
 
   setStateContext(context: any) {
@@ -290,14 +306,44 @@ export class AIActionDispatcher {
         await this.initializeStreaming(actionName, streamingOptions);
       }
 
+      // Log action to chat session if available
+      if (this.currentChatSessionId) {
+        await DatabaseServices.ChatMessage.create({
+          sessionId: this.currentChatSessionId,
+          role: 'TOOL' as any,
+          content: `Executing action: ${actionName}`,
+          metadata: { actionName, parameters, timestamp: new Date() }
+        });
+      }
+
       // Execute the action with enhanced context
       const enhancedParameters = {
         ...parameters,
         _sessionId: this.activeSessionId,
-        _streamingEnabled: !!streamingOptions?.enableRealTimeUpdates
+        _streamingEnabled: !!streamingOptions?.enableRealTimeUpdates,
+        _userId: this.currentUserId,
+        _chatSessionId: this.currentChatSessionId
       };
 
       const result = await (action as any)(enhancedParameters);
+
+      // Log result to chat session if available
+      if (this.currentChatSessionId && result.success) {
+        await DatabaseServices.ChatMessage.create({
+          sessionId: this.currentChatSessionId,
+          role: 'ASSISTANT' as any,
+          content: `Action completed: ${actionName}`,
+          metadata: {
+            actionName,
+            result: {
+              success: result.success,
+              insightsCount: result.insights?.length || 0,
+              visualizationsCount: result.visualizations?.length || 0
+            },
+            timestamp: new Date()
+          }
+        });
+      }
 
       // Handle completion callback
       if (streamingOptions?.onComplete) {
@@ -307,6 +353,20 @@ export class AIActionDispatcher {
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
+      // Log error to chat session if available
+      if (this.currentChatSessionId) {
+        try {
+          await DatabaseServices.ChatMessage.create({
+            sessionId: this.currentChatSessionId,
+            role: 'SYSTEM' as any,
+            content: `Action failed: ${actionName} - ${errorMessage}`,
+            metadata: { actionName, error: errorMessage, timestamp: new Date() }
+          });
+        } catch (dbError) {
+          console.warn('Failed to log error to chat session:', dbError);
+        }
+      }
 
       // Handle error callback
       if (streamingOptions?.onError) {
@@ -603,6 +663,28 @@ export class AIActionDispatcher {
   // Restaurant Market Research Enhanced Implementations
   private async defaultAnalyzeDeliveryMarket(params: ActionParameters['analyzeDeliveryMarket']): Promise<ActionResult> {
     try {
+      // Create market report first
+      const userId = this.getCurrentUserId();
+      const marketReport = await DatabaseServices.MarketReport.create({
+        title: `Delivery Market Analysis - ${params.region}`,
+        description: `${params.analysisType} analysis for ${params.region}`,
+        region: params.region,
+        analysisType: 'DELIVERY_MARKET' as AnalysisType,
+        userId,
+        metadata: {
+          analysisType: params.analysisType,
+          businessType: params.businessType,
+          orderVolume: params.orderVolume
+        }
+      });
+
+      // Create agent execution record
+      const agentExecution = await DatabaseServices.AgentExecution.create({
+        agentType: 'delivery-market-analyzer',
+        task: `Analyze delivery market: ${params.analysisType} in ${params.region}`,
+        metadata: { reportId: marketReport.id, parameters: params }
+      });
+
       // Call the backend deep-agent delivery market analysis
       const response = await fetch('/api/agent/delivery-market', {
         method: 'POST',
@@ -611,34 +693,69 @@ export class AIActionDispatcher {
           analysisType: params.analysisType,
           region: params.region,
           businessType: params.businessType,
-          orderVolume: params.orderVolume
+          orderVolume: params.orderVolume,
+          reportId: marketReport.id,
+          agentExecutionId: agentExecution.id
         })
       });
+
+      let analysisResult: any;
+      let analysisData: any;
 
       if (!response.ok) {
         throw new Error(`Backend analysis failed: ${response.statusText}`);
       }
 
-      const analysisResult = await response.json();
+      analysisResult = await response.json();
+      analysisData = {
+        platformAnalysis: analysisResult.competitiveData?.marketStructure || {
+          dominantPlatform: 'Platform A',
+          marketShare: '45%',
+          averageCommission: '18-22%',
+          onboardingComplexity: 'Medium'
+        },
+        recommendations: analysisResult.strategicRecommendations || [
+          'Focus on dominant platform for maximum reach',
+          'Negotiate volume discounts for commission rates',
+          'Consider multi-platform strategy for resilience'
+        ],
+        penetrationMetrics: analysisResult.penetrationData,
+        behaviorInsights: analysisResult.behaviorData,
+        operationOptimizations: analysisResult.optimizationData
+      };
+
+      // Save delivery market analysis to database
+      const deliveryAnalysis = await DatabaseServices.DeliveryMarketAnalysis.create({
+        reportId: marketReport.id,
+        analysisType: params.analysisType,
+        region: params.region,
+        businessType: params.businessType,
+        orderVolume: params.orderVolume,
+        data: analysisData,
+        insights: analysisResult.insights || [
+          `${params.analysisType} analysis completed for ${params.region}`,
+          'Delivery market analysis reveals growth opportunities',
+          'Technology integration capabilities vary significantly between platforms'
+        ],
+        recommendations: analysisResult.recommendations || []
+      });
+
+      // Update market report status
+      await DatabaseServices.MarketReport.updateStatus(marketReport.id, 'COMPLETED' as ReportStatus);
+
+      // Update agent execution status
+      await DatabaseServices.AgentExecution.updateStatus(
+        agentExecution.id,
+        'COMPLETED' as AgentStatus,
+        { deliveryAnalysisId: deliveryAnalysis.id }
+      );
+
+      // Update agent metrics
+      await DatabaseServices.AgentMetrics.incrementSuccess('delivery-market-analyzer', 'market-analysis');
 
       return {
         success: true,
-        data: analysisResult.data || {
-          platformAnalysis: analysisResult.competitiveData?.marketStructure || {
-            dominantPlatform: 'Platform A',
-            marketShare: '45%',
-            averageCommission: '18-22%',
-            onboardingComplexity: 'Medium'
-          },
-          recommendations: analysisResult.strategicRecommendations || [
-            'Focus on dominant platform for maximum reach',
-            'Negotiate volume discounts for commission rates',
-            'Consider multi-platform strategy for resilience'
-          ],
-          penetrationMetrics: analysisResult.penetrationData,
-          behaviorInsights: analysisResult.behaviorData,
-          operationOptimizations: analysisResult.optimizationData
-        },
+        data: analysisData,
         insights: analysisResult.insights || [
           `${params.analysisType} analysis completed for ${params.region}`,
           'Delivery market analysis reveals growth opportunities',
@@ -652,20 +769,45 @@ export class AIActionDispatcher {
             props: {
               analysisType: params.analysisType,
               region: params.region,
-              data: analysisResult.data
+              data: analysisData,
+              reportId: marketReport.id
             },
             position: 'main'
           },
           {
             type: 'card',
             component: 'MarketInsightsCard',
-            props: { insights: analysisResult.insights },
+            props: {
+              insights: analysisResult.insights,
+              reportId: marketReport.id
+            },
             position: 'sidebar'
           }
         ]
       };
     } catch (error) {
       console.warn('Backend delivery market analysis failed, using fallback:', error.message);
+
+      // Update agent execution with error
+      try {
+        const userId = this.getCurrentUserId();
+        const agentExecution = await DatabaseServices.AgentExecution.create({
+          agentType: 'delivery-market-analyzer',
+          task: `Analyze delivery market: ${params.analysisType} in ${params.region}`,
+          metadata: { parameters: params, error: error.message }
+        });
+
+        await DatabaseServices.AgentExecution.updateStatus(
+          agentExecution.id,
+          'FAILED' as AgentStatus,
+          undefined,
+          error.message
+        );
+
+        await DatabaseServices.AgentMetrics.incrementFailure('delivery-market-analyzer', 'market-analysis');
+      } catch (dbError) {
+        console.warn('Failed to record error in database:', dbError);
+      }
 
       // Fallback to enhanced mock data
       return {
@@ -974,7 +1116,7 @@ export class AIActionDispatcher {
           },
           {
             type: 'map_layer',
-            component: 'PropertyMarketLayer',
+            component: 'PropertyMarketChart',
             props: {
               location: params.location,
               propertyType: params.propertyType,
