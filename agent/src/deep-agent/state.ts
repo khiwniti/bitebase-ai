@@ -1,6 +1,6 @@
 /**
- * Enhanced Deep Agent State Management
- * Based on LangChain deep-agents-from-scratch patterns
+ * Enhanced Deep Agent State Management for Market Research
+ * Based on LangChain deep-agents-from-scratch patterns with market research specialization
  */
 
 import { BaseMessage } from "@langchain/core/messages";
@@ -17,14 +17,129 @@ export interface Todo {
   updatedAt: string;
 }
 
-// Analysis Context for maintaining research state
-export interface AnalysisContext {
+// Market Research Context
+export interface MarketResearchContext {
   sessionId: string;
-  topic: string;
-  phase: 'planning' | 'research' | 'analysis' | 'synthesis' | 'reporting';
-  objectives: string[];
+  targetCompany?: string;
+  industrySector?: string;
+  geographicScope?: string[];
+  researchObjectives: string[];
+  timeHorizon?: string;
+  phase: 'planning' | 'data_collection' | 'analysis' | 'synthesis' | 'reporting';
   findings: Record<string, any>;
   nextActions: string[];
+}
+
+// Competitor Profile for competitive analysis
+export interface CompetitorProfile {
+  name: string;
+  industry: string;
+  marketCap?: number;
+  revenue?: number;
+  employees?: number;
+  keyProducts: string[];
+  marketPosition: string;
+  strengths: string[];
+  weaknesses: string[];
+  marketShare?: number;
+  lastUpdated: string;
+}
+
+// Market Trend Analysis
+export interface TrendAnalysis {
+  trendId: string;
+  title: string;
+  category: 'technology' | 'consumer' | 'regulatory' | 'economic' | 'social';
+  description: string;
+  impact: 'low' | 'medium' | 'high';
+  timeframe: 'short_term' | 'medium_term' | 'long_term';
+  sources: string[];
+  confidence: number;
+  lastUpdated: string;
+}
+
+// Consumer Insights Profile
+export interface ConsumerProfile {
+  segment: string;
+  demographics: Record<string, any>;
+  behaviors: string[];
+  preferences: string[];
+  painPoints: string[];
+  trends: string[];
+  lastUpdated: string;
+}
+
+// Financial Analysis Data
+export interface FinancialAnalysis {
+  companyName: string;
+  period: string;
+  metrics: Record<string, number>;
+  ratios: Record<string, number>;
+  growth: Record<string, number>;
+  valuation: Record<string, number>;
+  lastUpdated: string;
+}
+
+// Regulatory Update Tracking
+export interface RegulatoryUpdate {
+  jurisdiction: string;
+  category: string;
+  title: string;
+  description: string;
+  effectiveDate?: string;
+  impact: 'low' | 'medium' | 'high';
+  affectedIndustries: string[];
+  lastUpdated: string;
+}
+
+// Research Plan Structure
+export interface ResearchPlan {
+  objectives: string[];
+  methodology: string[];
+  timeline: Record<string, string>;
+  resources: string[];
+  deliverables: string[];
+  successCriteria: string[];
+}
+
+// Evidence Collection Item
+export interface EvidenceItem {
+  id: string;
+  type: 'primary' | 'secondary' | 'tertiary';
+  source: string;
+  content: string;
+  relevance: number;
+  credibility: number;
+  date: string;
+  tags: string[];
+}
+
+// Validation State
+export interface ValidationState {
+  crossReferencesCompleted: boolean;
+  sourceCredibilityChecked: boolean;
+  dataConsistencyVerified: boolean;
+  expertReviewRequired: boolean;
+  confidenceLevel: number;
+}
+
+// Report Section
+export interface ReportSection {
+  title: string;
+  content: string;
+  charts?: string[];
+  tables?: string[];
+  recommendations?: string[];
+  confidence: number;
+}
+
+// Market Intelligence aggregated data
+export interface MarketIntelligence {
+  competitors: Record<string, CompetitorProfile>;
+  marketTrends: TrendAnalysis[];
+  consumerInsights: ConsumerProfile[];
+  financialData: FinancialAnalysis[];
+  regulatoryLandscape: RegulatoryUpdate[];
 }
 
 // Enhanced Business Intelligence Matrices
@@ -38,8 +153,8 @@ export interface BusinessMatrix {
   lastUpdated: string;
 }
 
-// Enhanced Deep Agent State
-export const DeepAgentState = Annotation.Root({
+// Enhanced Deep Agent State for Market Research
+export const MarketResearchAgentState = Annotation.Root({
   // Core messaging
   messages: Annotation<BaseMessage[]>({
     reducer: (currentState: BaseMessage[], updateValue: BaseMessage[]) => currentState.concat(updateValue),
@@ -75,6 +190,124 @@ export const DeepAgentState = Annotation.Root({
     },
     default: () => ({}),
   }),
+
+  // Market Research Context
+  researchContext: Annotation<MarketResearchContext>({
+    reducer: (left: MarketResearchContext | undefined, right: MarketResearchContext | undefined) => {
+      if (!left) return right;
+      if (!right) return left;
+      return { ...left, ...right };
+    },
+    default: () => ({
+      sessionId: '',
+      researchObjectives: [],
+      phase: 'planning',
+      findings: {},
+      nextActions: []
+    }),
+  }),
+
+  // Market Intelligence Layer
+  marketIntelligence: Annotation<MarketIntelligence>({
+    reducer: (left: MarketIntelligence | undefined, right: MarketIntelligence | undefined) => {
+      if (!left) return right || {
+        competitors: {},
+        marketTrends: [],
+        consumerInsights: [],
+        financialData: [],
+        regulatoryLandscape: []
+      };
+      if (!right) return left;
+      
+      return {
+        competitors: { ...left.competitors, ...right.competitors },
+        marketTrends: [...left.marketTrends, ...right.marketTrends],
+        consumerInsights: [...left.consumerInsights, ...right.consumerInsights],
+        financialData: [...left.financialData, ...right.financialData],
+        regulatoryLandscape: [...left.regulatoryLandscape, ...right.regulatoryLandscape]
+      };
+    },
+    default: () => ({
+      competitors: {},
+      marketTrends: [],
+      consumerInsights: [],
+      financialData: [],
+      regulatoryLandscape: []
+    }),
+  }),
+
+  // Research Workflow State
+  researchPlan: Annotation<ResearchPlan>({
+    reducer: (left: ResearchPlan | undefined, right: ResearchPlan | undefined) => {
+      if (!left) return right;
+      if (!right) return left;
+      return { ...left, ...right };
+    },
+    default: () => ({
+      objectives: [],
+      methodology: [],
+      timeline: {},
+      resources: [],
+      deliverables: [],
+      successCriteria: []
+    }),
+  }),
+
+  // Evidence Collection
+  evidenceCollection: Annotation<EvidenceItem[]>({
+    reducer: (left: EvidenceItem[] | undefined, right: EvidenceItem[] | undefined) => {
+      if (!left) return right || [];
+      if (!right) return left;
+      
+      const merged = [...left];
+      for (const newEvidence of right) {
+        const existingIndex = merged.findIndex(evidence => evidence.id === newEvidence.id);
+        if (existingIndex >= 0) {
+          merged[existingIndex] = newEvidence;
+        } else {
+          merged.push(newEvidence);
+        }
+      }
+      return merged;
+    },
+    default: () => [],
+  }),
+
+  // Validation Status
+  validationStatus: Annotation<ValidationState>({
+    reducer: (left: ValidationState | undefined, right: ValidationState | undefined) => {
+      if (!left) return right;
+      if (!right) return left;
+      return { ...left, ...right };
+    },
+    default: () => ({
+      crossReferencesCompleted: false,
+      sourceCredibilityChecked: false,
+      dataConsistencyVerified: false,
+      expertReviewRequired: false,
+      confidenceLevel: 0
+    }),
+  }),
+
+  // Report Sections
+  reportSections: Annotation<ReportSection[]>({
+    reducer: (left: ReportSection[] | undefined, right: ReportSection[] | undefined) => {
+      if (!left) return right || [];
+      if (!right) return left;
+      
+      const merged = [...left];
+      for (const newSection of right) {
+        const existingIndex = merged.findIndex(section => section.title === newSection.title);
+        if (existingIndex >= 0) {
+          merged[existingIndex] = newSection;
+        } else {
+          merged.push(newSection);
+        }
+      }
+      return merged;
+    },
+    default: () => [],
+  }),
   
   // Business Intelligence Matrices
   businessMatrices: Annotation<BusinessMatrix[]>({
@@ -97,4 +330,8 @@ export const DeepAgentState = Annotation.Root({
   }),
 });
 
-export type DeepAgentStateType = typeof DeepAgentState.State;
+export type MarketResearchAgentStateType = typeof MarketResearchAgentState.State;
+
+// Keep backward compatibility
+export const DeepAgentState = MarketResearchAgentState;
+export type DeepAgentStateType = MarketResearchAgentStateType;
