@@ -1,0 +1,49 @@
+{
+  "name": "bitebase-agents",
+  "version": "1.0.0",
+  "description": "BiteBase AI Agents - LangGraph-based multi-agent system for restaurant market research",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --exec ts-node --esm src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "invoke": "ts-node --esm src/invoke.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src --ext .ts,.js",
+    "format": "prettier --write src"
+  },
+  "keywords": [
+    "bitebase",
+    "ai",
+    "agents",
+    "langgraph",
+    "restaurant",
+    "market-research"
+  ],
+  "author": "BiteBase AI Team",
+  "license": "MIT",
+  "dependencies": {
+    "@executeautomation/playwright-mcp-server": "^1.0.6",
+    "@langchain/community": "^0.3.56",
+    "@langchain/core": "^0.3.77",
+    "@langchain/langgraph": "^0.4.9",
+    "@langchain/openai": "^0.6.13",
+    "better-sqlite3": "^11.10.0",
+    "canvas": "^3.2.0",
+    "chart.js": "^4.5.0",
+    "dotenv": "^17.2.2",
+    "langsmith": "^0.3.69",
+    "playwright": "^1.55.0",
+    "sqlite3": "^5.1.7",
+    "uuid": "^13.0.0",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "@types/uuid": "^10.0.0",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}

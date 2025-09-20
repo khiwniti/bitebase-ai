@@ -1,0 +1,235 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* BiteBase Intelligence Custom Variables */
+    --monospace-code-font-family: "JetBrains Mono", var(--font-jetbrains-mono), monospace;
+    --space-xsmall: 2px;
+    --space-small: 4px;
+    --space-medium: 8px;
+    --space-large: 12px;
+    --space-xlarge: 16px;
+    --space-xxlarge: 24px;
+    --description-foreground: var(--vscode-descriptionForeground, #959595);
+    --line-height: 140%;
+    --vscode-font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+    --capra-yellow: #ffc400;
+    --capra-orange: #ff9100;
+    --capra-deep-orange: #ff530f;
+    --capra-pink: #e62c6d;
+    --capra-purple: #b25aff;
+    --editor-font-family: "JetBrains Mono", var(--font-jetbrains-mono), monospace;
+    
+    /* VSCode Color Scheme Variables */
+    --vscode-focusBorder: #5876deff;
+    --vscode-foreground: #e1dfdfff;
+    --vscode-icon-foreground: #e1dfdfff;
+    --vscode-widget-shadow: #0a0a0a4d;
+    --vscode-descriptionForeground: #999999ff;
+    --vscode-errorForeground: #f76769ff;
+    --vscode-toolbar-hoverBackground: #e1dfdf1f;
+    --vscode-toolbar-activeBackground: #e1dfdf3d;
+    --vscode-textLink-foreground: #88a3ffff;
+    --vscode-textLink-activeForeground: #98b1ffff;
+    --vscode-textBlockQuote-background: #292929ff;
+    --vscode-textBlockQuote-border: #535353ff;
+    --vscode-textCodeBlock-background: #3e3e3eff;
+    --vscode-textPreformat-foreground: #b0afafff;
+    --vscode-textSeparator-foreground: #6a6a6aff;
+    
+    /* Button Colors */
+    --vscode-button-background: #7895ffff;
+    --vscode-button-hoverBackground: #88a3ffff;
+    --vscode-button-foreground: #000000ff;
+    --vscode-button-secondaryBackground: #535353ff;
+    --vscode-button-secondaryForeground: #ffffffff;
+    --vscode-button-secondaryHoverBackground: #6a6a6aff;
+    
+    /* Input Colors */
+    --vscode-input-background: #292929ff;
+    --vscode-input-border: #494949ff;
+    --vscode-input-foreground: #e1dfdfff;
+    --vscode-input-placeholderForeground: #999999ff;
+    
+    /* Background Colors */
+    --background: #1f1f1fff;
+    --contrast-active-border: transparent;
+    --focus-border: #5876deff;
+    --font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+    --foreground: #e1dfdfff;
+    
+    /* Tailwind CSS Variables */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    /* Dark Mode Variables */
+    --background: #1f1f1fff;
+    --foreground: #e1dfdfff;
+    --card: #1f1f1fff;
+    --card-foreground: #e1dfdfff;
+    --popover: #292929ff;
+    --popover-foreground: #e1dfdfff;
+    --primary: #7895ffff;
+    --primary-foreground: #000000ff;
+    --secondary: #535353ff;
+    --secondary-foreground: #ffffffff;
+    --muted: #292929ff;
+    --muted-foreground: #999999ff;
+    --accent: #292929ff;
+    --accent-foreground: #e1dfdfff;
+    --destructive: #f76769ff;
+    --destructive-foreground: #ffffffff;
+    --border: #494949ff;
+    --input: #292929ff;
+    --ring: #5876deff;
+    --chart-1: #7895ffff;
+    --chart-2: #88a3ffff;
+    --chart-3: #17b877ff;
+    --chart-4: #ffc26eff;
+    --chart-5: #f76769ff;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--vscode-font-family);
+    font-size: 13px;
+    line-height: var(--line-height);
+  }
+  
+  /* Code and monospace elements */
+  code,
+  pre,
+  .font-mono {
+    font-family: var(--monospace-code-font-family) !important;
+  }
+  
+  /* Apply JetBrains Mono to specific elements */
+  .code-font {
+    font-family: var(--monospace-code-font-family);
+  }
+}
+
+/* Viewport optimizations */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#__next {
+  height: 100%;
+}
+
+/* Prevent any scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Mapbox specific styles */
+.mapboxgl-canvas {
+  outline: none;
+}
+
+.mapboxgl-ctrl-group {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+.mapboxgl-ctrl-top-right {
+  top: 50px !important;
+  right: 10px !important;
+}
+
+/* Custom marker styles */
+.custom-marker {
+  transition: all 0.2s ease;
+}
+
+.custom-marker:hover {
+  transform: scale(1.1);
+}
+
+/* Compact UI improvements */
+.compact-controls {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .lg\:col-span-2,
+  .lg\:col-span-1 {
+    grid-column: span 1 !important;
+  }
+}
+
+@media (max-height: 600px) {
+  header {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+  }
+  
+  h1 {
+    font-size: 1rem !important;
+    margin-bottom: 0 !important;
+  }
+  
+  header p {
+    display: none !important;
+  }
+}
