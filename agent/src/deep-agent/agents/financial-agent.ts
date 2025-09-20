@@ -16,7 +16,7 @@ import {
   DelegationTask
 } from "../sub-agents";
 import { MemoryManager } from "../memory-manager";
-import { MarketResearchAgentStateType, FinancialMetrics } from "../state";
+import { MarketResearchAgentStateType } from "../state";
 
 // Financial Analysis Tools
 export const financialDataSearchTool = tool(
@@ -198,42 +198,49 @@ export const valuationModelingTool = tool(
     };
 
     // Calculate derived values
-    const model = valuationModels[valuationMethod];
+    const model = valuationModels[valuationMethod as keyof typeof valuationModels];
+    
+    if (!model) {
+      throw new Error(`Valuation method '${valuationMethod}' is not yet implemented. Available methods: ${Object.keys(valuationModels).join(', ')}`);
+    }
 
     if (valuationMethod === 'dcf') {
-      model.enterpriseValue = model.projectedCashFlows.reduce((sum, cf) => sum + cf.presentValue, 0) + model.terminalValue;
-      model.equityValue = model.enterpriseValue - (assumptions?.netDebt || 500000000);
-      model.sharePrice = model.equityValue / (assumptions?.sharesOutstanding || 50000000);
+      const dcfModel = model as typeof valuationModels.dcf;
+      dcfModel.enterpriseValue = dcfModel.projectedCashFlows.reduce((sum, cf) => sum + cf.presentValue, 0) + dcfModel.terminalValue;
+      dcfModel.equityValue = dcfModel.enterpriseValue - (assumptions?.netDebt || 500000000);
+      dcfModel.sharePrice = dcfModel.equityValue / (assumptions?.sharesOutstanding || 50000000);
     }
 
     if (valuationMethod === 'comparable_company') {
+      const compModel = model as typeof valuationModels.comparable_company;
       const targetRevenue = assumptions?.revenue || 2000000000;
       const targetEbitda = assumptions?.ebitda || 400000000;
       const targetEarnings = assumptions?.earnings || 200000000;
 
-      model.impliedValuation.evRevenue = targetRevenue * model.benchmarkMultiples.evRevenue.median;
-      model.impliedValuation.evEbitda = targetEbitda * model.benchmarkMultiples.evEbitda.median;
-      model.impliedValuation.peRatio = targetEarnings * model.benchmarkMultiples.peRatio.median;
-      model.impliedValuation.averageValuation = (
-        model.impliedValuation.evRevenue +
-        model.impliedValuation.evEbitda +
-        model.impliedValuation.peRatio
+      compModel.impliedValuation.evRevenue = targetRevenue * compModel.benchmarkMultiples.evRevenue.median;
+      compModel.impliedValuation.evEbitda = targetEbitda * compModel.benchmarkMultiples.evEbitda.median;
+      compModel.impliedValuation.peRatio = targetEarnings * compModel.benchmarkMultiples.peRatio.median;
+      compModel.impliedValuation.averageValuation = (
+        compModel.impliedValuation.evRevenue +
+        compModel.impliedValuation.evEbitda +
+        compModel.impliedValuation.peRatio
       ) / 3;
     }
 
     if (valuationMethod === 'asset_based') {
-      model.assetCategories.tangibleAssets.total = Object.values(model.assetCategories.tangibleAssets)
+      const assetModel = model as typeof valuationModels.asset_based;
+      assetModel.assetCategories.tangibleAssets.total = Object.values(assetModel.assetCategories.tangibleAssets)
         .filter(v => typeof v === 'number').reduce((sum: number, val: number) => sum + val, 0);
-      model.assetCategories.intangibleAssets.total = Object.values(model.assetCategories.intangibleAssets)
+      assetModel.assetCategories.intangibleAssets.total = Object.values(assetModel.assetCategories.intangibleAssets)
         .filter(v => typeof v === 'number').reduce((sum: number, val: number) => sum + val, 0);
-      model.assetCategories.liabilities.total = Object.values(model.assetCategories.liabilities)
+      assetModel.assetCategories.liabilities.total = Object.values(assetModel.assetCategories.liabilities)
         .filter(v => typeof v === 'number').reduce((sum: number, val: number) => sum + val, 0);
 
-      model.netAssetValue = model.assetCategories.tangibleAssets.total +
-                           model.assetCategories.intangibleAssets.total -
-                           model.assetCategories.liabilities.total;
-      model.bookValue = model.netAssetValue;
-      model.liquidationValue = model.netAssetValue * 0.7; // 30% liquidation discount
+      assetModel.netAssetValue = assetModel.assetCategories.tangibleAssets.total +
+                           assetModel.assetCategories.intangibleAssets.total -
+                           assetModel.assetCategories.liabilities.total;
+      assetModel.bookValue = assetModel.netAssetValue;
+      assetModel.liquidationValue = assetModel.netAssetValue * 0.7; // 30% liquidation discount
     }
 
     return {
@@ -451,7 +458,7 @@ export const financialRatioAnalysisTool = tool(
       analysisType,
       companyName: financialData.name || "Target Company",
       analysisDate: new Date().toISOString(),
-      ratioAnalysis: ratioAnalysis[analysisType] || ratioAnalysis,
+      ratioAnalysis: ratioAnalysis[analysisType as keyof typeof ratioAnalysis] || ratioAnalysis,
       overallAssessment: {
         financialHealth: Math.random() > 0.7 ? 'strong' : Math.random() > 0.3 ? 'moderate' : 'weak',
         keyStrengths: [
@@ -499,7 +506,7 @@ export const financialRatioAnalysisTool = tool(
 export class FinancialAgent {
   private memoryManager: MemoryManager;
   private tools: any[];
-  private llm: ChatOpenAI;
+  private llm?: ChatOpenAI;
 
   constructor(memoryManager: MemoryManager, apiKey?: string) {
     this.memoryManager = memoryManager;
@@ -588,8 +595,8 @@ export class FinancialAgent {
         agentName: "FinancialAgent",
         taskId: task.id,
         status: 'failed',
-        data: { error: error.message },
-        insights: [`Financial analysis failed: ${error.message}`],
+        data: { error: error instanceof Error ? error.message : 'Unknown error' },
+        insights: [`Financial analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
         nextActions: ['Retry analysis with different parameters', 'Check financial data sources'],
         memoryItems: [],
         executionTime: Date.now() - startTime,

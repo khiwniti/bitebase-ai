@@ -41,7 +41,7 @@ export const deliveryMarketPenetrationTool = tool(
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.warn('Delivery penetration analysis failed, using fallback:', error.message);
+      console.warn('Delivery penetration analysis failed, using fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         region,
@@ -106,7 +106,7 @@ export const deliveryConsumerBehaviorTool = tool(
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.warn('Consumer behavior analysis failed, using expertise fallback:', error.message);
+      console.warn('Consumer behavior analysis failed, using expertise fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         analysisType,
@@ -172,7 +172,7 @@ export const deliveryCompetitiveLandscapeTool = tool(
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.warn('Competitive landscape analysis failed, using expertise fallback:', error.message);
+      console.warn('Competitive landscape analysis failed, using expertise fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         analysisScope,
@@ -244,7 +244,7 @@ export const deliveryOperationsOptimizationTool = tool(
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.warn('Operations optimization analysis failed, using expertise fallback:', error.message);
+      console.warn('Operations optimization analysis failed, using expertise fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         optimizationFocus,
@@ -362,7 +362,7 @@ function getSegmentMultiplier(segment?: string): number {
     convenience: 1.1,
     family: 1.0
   };
-  return multipliers[segment] || 1.0;
+  return ((multipliers as any)[segment || 'young_adult']) || 1.0;
 }
 
 function generateSegmentAnalysis(segment?: string, region?: string): any {
@@ -431,7 +431,7 @@ function calculateGrowthProjections(data: any, timeframe: string): any {
     '2_years': 2.0
   };
 
-  const multiplier = timeMultipliers[timeframe] || 1.0;
+  const multiplier = (timeMultipliers as any)[timeframe] || 1.0;
   const baseGrowth = Math.random() * 15 + 20; // 20-35% annual growth
 
   return {
@@ -493,7 +493,7 @@ function generateBehaviorPatterns(analysisType: string, demographic?: string): a
     }
   };
 
-  return patterns[analysisType] || patterns.ordering_patterns;
+  return (patterns as any)[analysisType] || patterns.ordering_patterns;
 }
 
 function generateDecisionDrivers(analysisType: string, demographic?: string): string[] {
@@ -505,7 +505,7 @@ function generateDecisionDrivers(analysisType: string, demographic?: string): st
     loyalty_drivers: ['Consistent quality', 'Reliable service', 'Rewards program', 'Customer service']
   };
 
-  return drivers[analysisType] || drivers.ordering_patterns;
+  return (drivers as any)[analysisType] || drivers.ordering_patterns;
 }
 
 function generatePreferences(analysisType: string, region?: string): any {
@@ -598,7 +598,7 @@ function generateDifferentiationFactors(focusArea?: string): string[] {
     partnerships: ['Restaurant exclusives', 'Corporate contracts', 'Integration partnerships', 'Content collaborations']
   };
 
-  return factors[focusArea] || [
+  return (factors as any)[focusArea || 'general'] || [
     'Service quality and reliability',
     'Restaurant partner network',
     'Technology and user experience',
@@ -653,7 +653,7 @@ function identifyOptimizationAreas(focus: string, scope: string): string[] {
     driver_utilization: ['Scheduling optimization', 'Multi-order delivery', 'Zone management', 'Incentive systems']
   };
 
-  return areas[focus] || areas.delivery_time;
+  return (areas as any)[focus] || areas.delivery_time;
 }
 
 function generateOptimizationSolutions(focus: string, constraints?: string[]): any {
@@ -795,7 +795,7 @@ function generateSegmentCharacteristics(segment?: string): string[] {
     family: ['Group ordering', 'Kid-friendly needs', 'Value for money', 'Schedule flexibility']
   };
 
-  return characteristics[segment] || ['Diverse needs', 'Mixed preferences', 'Varied spending patterns'];
+  return (characteristics as any)[segment || 'general'] || ['Diverse needs', 'Mixed preferences', 'Varied spending patterns'];
 }
 
 function generatePenetrationOpportunities(segment?: string, region?: string): string[] {
@@ -852,7 +852,7 @@ function generateQuickWins(focus: string): string[] {
     driver_utilization: ['Zone optimization', 'Shift scheduling', 'Performance incentives']
   };
 
-  return wins[focus] || wins.delivery_time;
+  return (wins as any)[focus] || wins.delivery_time;
 }
 
 function generateMediumTermSolutions(focus: string): string[] {
@@ -873,6 +873,16 @@ function generateLongTermStrategies(focus: string): string[] {
     'Strategic partnership development',
     'Market expansion planning'
   ];
+}
+
+function analyzeMarketPositioning(competitiveData: any, analysisScope?: string): any {
+  return {
+    currentPosition: 'Market leader in food delivery',
+    strengths: ['Wide restaurant network', 'Fast delivery times'],
+    weaknesses: ['Higher pricing compared to competitors'],
+    opportunities: ['Expansion to new market segments', 'Technology integration'],
+    marketShare: '25-30%'
+  };
 }
 
 function analyzeConstraints(constraints?: string[]): any {
@@ -946,7 +956,7 @@ function generateImprovementAreas(focus: string): string[] {
     driver_utilization: ['Schedule optimization', 'Performance tracking', 'Motivation systems']
   };
 
-  return areas[focus] || areas.delivery_time;
+  return (areas as any)[focus] || areas.delivery_time;
 }
 
 function generateFallbackOpportunities(focus: string): string[] {

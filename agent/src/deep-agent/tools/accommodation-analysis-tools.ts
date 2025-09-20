@@ -53,7 +53,7 @@ export const accommodationMarketDensityTool = tool(
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.warn('Accommodation density analysis failed, using fallback:', error.message);
+      console.warn('Accommodation density analysis failed, using fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         analysisType,
@@ -128,7 +128,7 @@ export const tourismImpactAssessmentTool = tool(
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.warn('Tourism impact assessment failed, using fallback:', error.message);
+      console.warn('Tourism impact assessment failed, using fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         assessmentType,
@@ -205,7 +205,7 @@ export const accommodationCatchmentTool = tool(
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.warn('Catchment area analysis failed, using fallback:', error.message);
+      console.warn('Catchment area analysis failed, using fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         analysisMode,
@@ -281,7 +281,7 @@ export const accommodationGuestBehaviorTool = tool(
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.warn('Guest behavior analysis failed, using fallback:', error.message);
+      console.warn('Guest behavior analysis failed, using fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         behaviorType,
@@ -465,7 +465,7 @@ function getAccommodationTypeMultiplier(accommodationType?: string): number {
     'boutique': 0.4,
     'all': 1.0
   };
-  return multipliers[accommodationType] || 1.0;
+  return (multipliers as any)[accommodationType || 'all'] || 1.0;
 }
 
 function getPriceSegmentMultiplier(priceSegment?: string): number {
@@ -475,7 +475,7 @@ function getPriceSegmentMultiplier(priceSegment?: string): number {
     'luxury': 0.7,
     'all': 1.0
   };
-  return multipliers[priceSegment] || 1.0;
+  return (multipliers as any)[priceSegment || 'all'] || 1.0;
 }
 
 function generateHotspots(location: string, region: string): string[] {
@@ -500,7 +500,7 @@ function generatePriceRange(priceSegment?: string, region?: string): string {
     'all': `${Math.floor(800 * baseMultiplier)}-${Math.floor(8000 * baseMultiplier)} THB`
   };
 
-  return ranges[priceSegment] || ranges['all'];
+  return (ranges as any)[priceSegment || 'all'] || ranges['all'];
 }
 
 function generateSeasonalPeaks(region: string): any {
@@ -616,7 +616,7 @@ function generatePrimaryMotivation(guestSegment?: string, accommodationCategory?
     'budget': 'Value and affordability'
   };
 
-  return motivations[accommodationCategory] || 'Quality and satisfaction';
+  return (motivations as any)[accommodationCategory || 'hotels'] || 'Quality and satisfaction';
 }
 
 function generateDecisionFactors(behaviorType: string, accommodationCategory: string): string[] {
@@ -627,7 +627,7 @@ function generateDecisionFactors(behaviorType: string, accommodationCategory: st
     'decision_drivers': ['Recommendations', 'Online reviews', 'Proximity', 'Menu variety']
   };
 
-  return factors[behaviorType] || factors['dining_preferences'];
+  return (factors as any)[behaviorType] || factors['dining_preferences'];
 }
 
 function generateSpendingPriorities(behaviorType: string, guestSegment?: string): any {
@@ -701,7 +701,7 @@ function generateAtmospherePreferences(accommodationCategory: string): string[] 
     'budget': ['Casual and friendly', 'Good value atmosphere', 'Comfortable seating']
   };
 
-  return preferences[accommodationCategory] || preferences['leisure'];
+  return (preferences as any)[accommodationCategory] || preferences['leisure'];
 }
 
 function generateBudgetRange(behaviorType: string, accommodationCategory: string): string {
@@ -712,7 +712,7 @@ function generateBudgetRange(behaviorType: string, accommodationCategory: string
     'budget': '200-500 THB per meal'
   };
 
-  return budgets[accommodationCategory] || budgets['leisure'];
+  return (budgets as any)[accommodationCategory] || budgets['leisure'];
 }
 
 function generateTransportationUsage(guestSegment?: string): any {
@@ -844,7 +844,7 @@ function generateFallbackRevenueProjections(timeframe: string): any {
     '2_years': 2.0
   };
 
-  const multiplier = timeMultipliers[timeframe] || 1.0;
+  const multiplier = (timeMultipliers as any)[timeframe] || 1.0;
 
   return {
     projectedRevenue: `${Math.floor(8000000 * multiplier).toLocaleString()} THB`,
@@ -1077,7 +1077,7 @@ function generateRevenueProjections(tourismData: any, timeframe: string): any {
     '2_years': 2.0
   };
 
-  const multiplier = timeMultipliers[timeframe] || 1.0;
+  const multiplier = (timeMultipliers as any)[timeframe] || 1.0;
   const baseRevenue = 8000000; // 8M THB annually
 
   return {
@@ -1142,7 +1142,7 @@ function calculateAccessibilityScore(catchmentData: any, analysisMode: string): 
     'competitive_proximity': 0
   };
 
-  return Math.max(0, Math.min(100, baseScore + (adjustments[analysisMode] || 0)));
+  return Math.max(0, Math.min(100, baseScore + ((adjustments as any)[analysisMode] || 0)));
 }
 
 function assessCustomerReachability(catchmentData: any, walkingRadius?: number): any {
@@ -1179,7 +1179,7 @@ function generateOptimizationRecommendations(catchmentData: any, analysisMode: s
     'competitive_proximity': ['Focus on unique value proposition', 'Create exclusive guest programs']
   };
 
-  return [...baseRecommendations, ...(modeSpecific[analysisMode] || [])];
+  return [...baseRecommendations, ...((modeSpecific as any)[analysisMode] || [])];
 }
 
 function evaluateBusinessPotential(catchmentData: any, region: string): any {

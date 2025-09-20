@@ -194,7 +194,7 @@ export const MarketResearchAgentState = Annotation.Root({
       if (!right) return left;
 
       return {
-        activeAgents: [...new Set([...left.activeAgents, ...right.activeAgents])],
+        activeAgents: Array.from(new Set([...left.activeAgents, ...right.activeAgents])),
         agentStatus: { ...left.agentStatus, ...right.agentStatus },
         agentCommunication: [...left.agentCommunication, ...right.agentCommunication],
         coordinationMode: right.coordinationMode || left.coordinationMode,
@@ -244,8 +244,8 @@ export const MarketResearchAgentState = Annotation.Root({
 
   // Market Research Context
   researchContext: Annotation<MarketResearchContext>({
-    reducer: (left: MarketResearchContext | undefined, right: MarketResearchContext | undefined) => {
-      if (!left) return right;
+    reducer: (left: MarketResearchContext | undefined, right: MarketResearchContext | undefined): MarketResearchContext => {
+      if (!left) return right || {} as MarketResearchContext;
       if (!right) return left;
       return { ...left, ...right };
     },
@@ -289,8 +289,8 @@ export const MarketResearchAgentState = Annotation.Root({
 
   // Research Workflow State
   researchPlan: Annotation<ResearchPlan>({
-    reducer: (left: ResearchPlan | undefined, right: ResearchPlan | undefined) => {
-      if (!left) return right;
+    reducer: (left: ResearchPlan | undefined, right: ResearchPlan | undefined): ResearchPlan => {
+      if (!left) return right || {} as ResearchPlan;
       if (!right) return left;
       return { ...left, ...right };
     },
@@ -326,8 +326,8 @@ export const MarketResearchAgentState = Annotation.Root({
 
   // Validation Status
   validationStatus: Annotation<ValidationState>({
-    reducer: (left: ValidationState | undefined, right: ValidationState | undefined) => {
-      if (!left) return right;
+    reducer: (left: ValidationState | undefined, right: ValidationState | undefined): ValidationState => {
+      if (!left) return right || {} as ValidationState;
       if (!right) return left;
       return { ...left, ...right };
     },

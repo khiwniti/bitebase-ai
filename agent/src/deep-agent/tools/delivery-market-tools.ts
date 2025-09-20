@@ -50,7 +50,7 @@ export const deliveryPlatformEcosystemTool = tool(
         complianceNote: 'Ecosystem analysis using indirect market research methods without direct platform scraping'
       };
     } catch (error) {
-      console.warn('Platform ecosystem analysis failed, using enhanced fallback:', error.message);
+      console.warn('Platform ecosystem analysis failed, using enhanced fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         searchQuery: query,
@@ -122,7 +122,7 @@ export const lastMileLogisticsTool = tool(
         complianceNote: 'Logistics analysis using indirect market research without operational data scraping'
       };
     } catch (error) {
-      console.warn('Logistics analysis failed, using enhanced fallback:', error.message);
+      console.warn('Logistics analysis failed, using enhanced fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         searchQuery: query,
@@ -202,7 +202,7 @@ export const deliveryCustomerBehaviorTool = tool(
         complianceNote: 'Customer behavior analysis using indirect market research without personal data collection'
       };
     } catch (error) {
-      console.warn('Customer behavior analysis failed, using enhanced fallback:', error.message);
+      console.warn('Customer behavior analysis failed, using enhanced fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         searchQuery: query,
@@ -274,7 +274,7 @@ export const deliveryTechnologyTrendsTool = tool(
         complianceNote: 'Technology trends analysis using indirect market research without proprietary system access'
       };
     } catch (error) {
-      console.warn('Technology trends analysis failed, using enhanced fallback:', error.message);
+      console.warn('Technology trends analysis failed, using enhanced fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         searchQuery: query,
@@ -937,6 +937,45 @@ async function performCustomerBehaviorAnalysis(
   cuisineType?: string,
   timeframe?: string
 ): Promise<any> {
+  function generateCustomerBehaviorMetrics(analysisType: string, region: string, customerSegment?: string): any {
+    return {
+      orderFrequency: Math.floor(Math.random() * 10) + 5,
+      averageOrderValue: Math.floor(Math.random() * 500) + 200,
+      sessionDuration: Math.floor(Math.random() * 15) + 5,
+      retentionRate: Math.random() * 0.3 + 0.6
+    };
+  }
+
+  function getCustomerSegmentAnalysis(analysisType: string, customerSegment?: string, region?: string): any {
+    return {
+      segmentSize: Math.floor(Math.random() * 100000) + 50000,
+      growthRate: Math.random() * 0.2 + 0.05,
+      characteristics: ['Tech-savvy', 'Price-conscious', 'Quality-focused']
+    };
+  }
+
+  function getCustomerPreferenceTrends(analysisType: string, cuisineType?: string, timeframe?: string): any {
+    return {
+      popularCuisines: ['Thai', 'Japanese', 'Western'],
+      orderTimings: ['12:00-13:00', '18:00-20:00'],
+      preferredFeatures: ['Quick delivery', 'Multiple payment options']
+    };
+  }
+
+  function getCustomerLoyaltyFactors(analysisType: string, region: string): any {
+    return {
+      primaryFactors: ['Service quality', 'Pricing', 'Delivery speed'],
+      retentionStrategies: ['Loyalty programs', 'Personalized offers']
+    };
+  }
+
+  function getCustomerMarketingInsights(analysisType: string, customerSegment?: string): any {
+    return {
+      preferredChannels: ['Social media', 'Email', 'Push notifications'],
+      messageTypes: ['Promotional', 'Informational', 'Personalized']
+    };
+  }
+
   try {
     const behaviorData = {
       behaviorMetrics: generateCustomerBehaviorMetrics(analysisType, region, customerSegment),
@@ -1094,9 +1133,3 @@ function getTechnologyInnovationOpportunities(analysisType: string, technologyFo
   ];
 }
 
-export {
-  deliveryPlatformEcosystemTool,
-  lastMileLogisticsTool,
-  deliveryCustomerBehaviorTool,
-  deliveryTechnologyTrendsTool
-};

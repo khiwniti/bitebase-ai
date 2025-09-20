@@ -83,8 +83,7 @@ export const OpenSourceMCPServers: Record<string, MCPServerConfig> = {
     description: "Local file system operations",
     transport: "stdio",
     command: "npx",
-    args: ["@modelcontextprotocol/server-filesystem"],
-    args: ["./data"],
+    args: ["@modelcontextprotocol/server-filesystem", "./data"],
     capabilities: ["file_operations", "document_storage", "report_generation"],
     requiresApiKey: false
   },

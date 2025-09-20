@@ -251,7 +251,7 @@ export class PerformanceMonitor extends EventEmitter {
     const mcpServerSuccessRate: Record<string, number> = {};
     const mcpConnectionHealth: Record<string, 'healthy' | 'degraded' | 'failed'> = {};
 
-    for (const [serverName, metrics] of this.mcpServerMetrics.entries()) {
+    for (const [serverName, metrics] of Array.from(this.mcpServerMetrics.entries())) {
       const avgLatency = metrics.latency.reduce((sum, lat) => sum + lat, 0) / metrics.latency.length || 0;
       const successRate = metrics.successCount / (metrics.successCount + metrics.failureCount) || 1;
 
@@ -471,7 +471,7 @@ export class PerformanceMonitor extends EventEmitter {
 
     this.monitoringInterval = setInterval(() => {
       // Collect metrics for all active sessions
-      for (const sessionId of this.sessionStartTime.keys()) {
+      for (const sessionId of Array.from(this.sessionStartTime.keys())) {
         this.collectMetrics(sessionId);
       }
     }, this.config.metricsCollectionInterval);
@@ -499,7 +499,7 @@ export class PerformanceMonitor extends EventEmitter {
     let totalLatency = 0;
     let count = 0;
 
-    for (const metrics of this.mcpServerMetrics.values()) {
+    for (const metrics of Array.from(this.mcpServerMetrics.values())) {
       totalLatency += metrics.latency.reduce((sum, lat) => sum + lat, 0);
       count += metrics.latency.length;
     }

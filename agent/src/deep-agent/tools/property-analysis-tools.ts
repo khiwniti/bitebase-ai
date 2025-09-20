@@ -53,7 +53,7 @@ export const propertyMarketAnalysisTool = tool(
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.warn('Property market analysis failed, using fallback:', error.message);
+      console.warn('Property market analysis failed, using fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         analysisType,
@@ -128,7 +128,7 @@ export const locationAccessibilityTool = tool(
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.warn('Location accessibility analysis failed, using fallback:', error.message);
+      console.warn('Location accessibility analysis failed, using fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         analysisType,
@@ -208,7 +208,7 @@ export const commercialPropertyInvestmentTool = tool(
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.warn('Commercial property investment analysis failed, using fallback:', error.message);
+      console.warn('Commercial property investment analysis failed, using fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         investmentType,
@@ -292,7 +292,7 @@ export const competitorProximityTool = tool(
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.warn('Competitor proximity analysis failed, using fallback:', error.message);
+      console.warn('Competitor proximity analysis failed, using fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         analysisType,

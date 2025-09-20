@@ -52,7 +52,7 @@ export const accommodationClusterTool = tool(
         complianceNote: 'Accommodation cluster analysis using indirect tourism research without booking platform scraping'
       };
     } catch (error) {
-      console.warn('Accommodation cluster analysis failed, using enhanced fallback:', error.message);
+      console.warn('Accommodation cluster analysis failed, using enhanced fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         searchQuery: query,
@@ -132,7 +132,7 @@ export const touristFlowAnalysisTool = tool(
         complianceNote: 'Tourist flow analysis using indirect tourism research without personal data collection'
       };
     } catch (error) {
-      console.warn('Tourist flow analysis failed, using enhanced fallback:', error.message);
+      console.warn('Tourist flow analysis failed, using enhanced fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         searchQuery: query,
@@ -206,7 +206,7 @@ export const accommodationOpportunityTool = tool(
         complianceNote: 'Accommodation opportunity analysis using indirect business research methods'
       };
     } catch (error) {
-      console.warn('Accommodation opportunity analysis failed, using enhanced fallback:', error.message);
+      console.warn('Accommodation opportunity analysis failed, using enhanced fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         searchQuery: query,
@@ -280,7 +280,7 @@ export const hospitalityIntegrationTool = tool(
         complianceNote: 'Hospitality integration analysis using indirect business research methods'
       };
     } catch (error) {
-      console.warn('Hospitality integration analysis failed, using enhanced fallback:', error.message);
+      console.warn('Hospitality integration analysis failed, using enhanced fallback:', error instanceof Error ? error.message : 'Unknown error');
 
       return {
         searchQuery: query,
@@ -1025,9 +1025,3 @@ function getHospitalityPartnershipStructure(serviceType: string, integrationScop
   };
 }
 
-export {
-  accommodationClusterTool,
-  touristFlowAnalysisTool,
-  accommodationOpportunityTool,
-  hospitalityIntegrationTool
-};

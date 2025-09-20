@@ -411,7 +411,7 @@ export class ResilienceManager extends EventEmitter {
   } {
     const operationCounts: { [key: string]: { success: number; failure: number; successRate: number } } = {};
 
-    for (const [operation, counts] of this.operationCounters.entries()) {
+    for (const [operation, counts] of Array.from(this.operationCounters.entries())) {
       const total = counts.success + counts.failure;
       operationCounts[operation] = {
         ...counts,
@@ -420,7 +420,7 @@ export class ResilienceManager extends EventEmitter {
     }
 
     const circuitBreakerStatus: { [key: string]: string } = {};
-    for (const [operation, state] of this.circuitBreakers.entries()) {
+    for (const [operation, state] of Array.from(this.circuitBreakers.entries())) {
       circuitBreakerStatus[operation] = state.state;
     }
 

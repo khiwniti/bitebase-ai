@@ -102,7 +102,7 @@ export class MemoryManager {
         projectContext = semanticData.context;
         codeReferences = semanticData.references;
       } catch (error) {
-        console.warn('Serena semantic analysis failed, using basic storage:', error.message);
+        console.warn('Serena semantic analysis failed, using basic storage:', error instanceof Error ? error.message : 'Unknown error');
       }
     }
 
@@ -167,7 +167,7 @@ export class MemoryManager {
           this.semanticSimilarity(mem, query.semanticQuery!) > 0.6
         );
       } catch (error) {
-        console.warn('Serena semantic search failed, using traditional search:', error.message);
+        console.warn('Serena semantic search failed, using traditional search:', error instanceof Error ? error.message : 'Unknown error');
       }
     }
 
@@ -306,7 +306,7 @@ export class MemoryManager {
         codePatterns = patternAnalysis.codePatterns;
         projectPatterns = patternAnalysis.projectPatterns;
       } catch (error) {
-        console.warn('Serena pattern analysis failed, using basic pattern recording:', error.message);
+        console.warn('Serena pattern analysis failed, using basic pattern recording:', error instanceof Error ? error.message : 'Unknown error');
       }
     }
 
@@ -319,13 +319,13 @@ export class MemoryManager {
 
       // Update Serena-enhanced data
       if (semanticClusters.length > 0) {
-        pattern.semanticClusters = [...new Set([...(pattern.semanticClusters || []), ...semanticClusters])];
+        pattern.semanticClusters = Array.from(new Set([...(pattern.semanticClusters || []), ...semanticClusters]));
       }
       if (codePatterns.length > 0) {
-        pattern.codePatterns = [...new Set([...(pattern.codePatterns || []), ...codePatterns])];
+        pattern.codePatterns = Array.from(new Set([...(pattern.codePatterns || []), ...codePatterns]));
       }
       if (projectPatterns.length > 0) {
-        pattern.projectPatterns = [...new Set([...(pattern.projectPatterns || []), ...projectPatterns])];
+        pattern.projectPatterns = Array.from(new Set([...(pattern.projectPatterns || []), ...projectPatterns]));
       }
     } else {
       const pattern: LearningPattern = {
@@ -370,7 +370,7 @@ export class MemoryManager {
   async getRecommendations(currentContext: string): Promise<string[]> {
     const recommendations: string[] = [];
 
-    for (const pattern of this.learningPatterns.values()) {
+    for (const pattern of Array.from(this.learningPatterns.values())) {
       if (pattern.successRate > 0.7 &&
           pattern.occurrences >= 3 &&
           pattern.contexts.some(ctx => this.contextSimilarity(ctx, currentContext) > 0.6)) {
@@ -417,7 +417,7 @@ export class MemoryManager {
 
     // Remove expired memories
     const now = new Date();
-    for (const [id, memory] of this.memories.entries()) {
+    for (const [id, memory] of Array.from(this.memories.entries())) {
       if (memory.expiresAt && new Date(memory.expiresAt) < now) {
         this.memories.delete(id);
       }
@@ -444,8 +444,8 @@ export class MemoryManager {
   private contextSimilarity(context1: string, context2: string): number {
     const words1 = new Set(context1.toLowerCase().split(/\s+/));
     const words2 = new Set(context2.toLowerCase().split(/\s+/));
-    const intersection = new Set([...words1].filter(x => words2.has(x)));
-    const union = new Set([...words1, ...words2]);
+    const intersection = new Set(Array.from(words1).filter(x => words2.has(x)));
+    const union = new Set([...Array.from(words1), ...Array.from(words2)]);
     return intersection.size / union.size;
   }
 
@@ -455,7 +455,7 @@ export class MemoryManager {
       // Basic semantic matching based on signature keywords
       const signatureWords = new Set(memory.metadata.semanticSignature.toLowerCase().split(/\s+/));
       const queryWords = new Set(query.toLowerCase().split(/\s+/));
-      const intersection = new Set([...signatureWords].filter(x => queryWords.has(x)));
+      const intersection = new Set(Array.from(signatureWords).filter(x => queryWords.has(x)));
       return intersection.size / Math.max(signatureWords.size, queryWords.size);
     }
 
@@ -682,7 +682,7 @@ export class MemoryManager {
     const symbols = content.match(symbolRegex) || [];
     references.push(...symbols.slice(0, 5)); // Limit to 5 symbols
 
-    return [...new Set(references)];
+    return Array.from(new Set(references));
   }
 
   /**
@@ -707,7 +707,7 @@ export class MemoryManager {
         console.log('Serena onboarding pending - project memory will be limited until onboarding complete');
       }
     } catch (error) {
-      console.warn('Serena project initialization failed, using local memory only:', error.message);
+      console.warn('Serena project initialization failed, using local memory only:', error instanceof Error ? error.message : 'Unknown error');
       this.serenaEnabled = false;
     }
   }
@@ -718,7 +718,7 @@ export class MemoryManager {
       try {
         await this.loadFromSerenaMemory();
       } catch (error) {
-        console.warn('Failed to load Serena memories, using local fallback:', error.message);
+        console.warn('Failed to load Serena memories, using local fallback:', error instanceof Error ? error.message : 'Unknown error');
       }
     }
 
@@ -733,7 +733,7 @@ export class MemoryManager {
       try {
         await this.saveToSerenaMemory();
       } catch (error) {
-        console.warn('Failed to save to Serena memory, using local fallback:', error.message);
+        console.warn('Failed to save to Serena memory, using local fallback:', error instanceof Error ? error.message : 'Unknown error');
       }
     }
 
@@ -741,7 +741,7 @@ export class MemoryManager {
     const state = await this.exportMemoryState();
 
     // Use the file tools to save memory state
-    await writeFile({
+    await writeFile.invoke({
       filePath: 'memory_state.json',
       content: JSON.stringify(state, null, 2)
     });

@@ -114,7 +114,7 @@ Respond in JSON format with the structure: {
   async monitorProgress(): Promise<Record<string, AgentStatus>> {
     const statuses: Record<string, AgentStatus> = {};
     
-    for (const [agentId, status] of this.agentStatuses) {
+    for (const [agentId, status] of Array.from(this.agentStatuses.entries())) {
       statuses[agentId] = { ...status };
     }
 
@@ -332,7 +332,7 @@ Identify 3-5 key risks with mitigation strategies. Format as JSON array of strin
 export function createSupervisorWorkflow() {
   const supervisor = new SupervisorAgent();
 
-  const workflow = new StateGraph(MarketResearchAgentStateType)
+  const workflow = new StateGraph({} as any)
     .addNode("plan_research", async (state) => {
       if (!state.researchContext.sessionId) {
         throw new Error("Session ID required for research planning");

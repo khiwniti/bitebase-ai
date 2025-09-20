@@ -5,13 +5,13 @@
 
 import { MarketResearchAgentStateType } from "./state";
 import { MemoryManager } from "./memory-manager";
-import { CompetitorAgent } from "./agents/competitor-agent";
-import { MarketTrendAgent } from "./agents/market-trend-agent";
-import { ConsumerAgent } from "./agents/consumer-agent";
-import { FinancialAgent } from "./agents/financial-agent";
-import { TechnicalAgent } from "./agents/technical-agent";
-import { RegulatoryAgent } from "./agents/regulatory-agent";
-import { PropertyAgent } from "./agents/property-agent";
+import { CompetitorAgent as CompetitorAgentClass } from "./agents/competitor-agent";
+import { MarketTrendAgent as MarketTrendAgentClass } from "./agents/market-trend-agent";
+import { ConsumerAgent as ConsumerAgentClass } from "./agents/consumer-agent";
+import { FinancialAgent as FinancialAgentClass } from "./agents/financial-agent";
+import { TechnicalAgent as TechnicalAgentClass } from "./agents/technical-agent";
+import { RegulatoryAgent as RegulatoryAgentClass } from "./agents/regulatory-agent";
+import { PropertyAgent as PropertyAgentClass } from "./agents/property-agent";
 
 // Enhanced Sub-Agent Interface with coordination capabilities
 export interface SubAgent {
@@ -529,25 +529,25 @@ export class SubAgentExecutor {
    */
   private initializeAgentInstances(): void {
     // Initialize CompetitorAgent
-    this.agentInstances.set('CompetitorAgent', new CompetitorAgent(this.memoryManager));
+    this.agentInstances.set('CompetitorAgent', new CompetitorAgentClass(this.memoryManager));
 
     // Initialize MarketTrendAgent
-    this.agentInstances.set('MarketTrendAgent', new MarketTrendAgent(this.memoryManager));
+    this.agentInstances.set('MarketTrendAgent', new MarketTrendAgentClass(this.memoryManager));
 
     // Initialize ConsumerAgent
-    this.agentInstances.set('ConsumerAgent', new ConsumerAgent(this.memoryManager));
+    this.agentInstances.set('ConsumerAgent', new ConsumerAgentClass(this.memoryManager));
 
     // Initialize FinancialAgent
-    this.agentInstances.set('FinancialAgent', new FinancialAgent(this.memoryManager));
+    this.agentInstances.set('FinancialAgent', new FinancialAgentClass(this.memoryManager));
 
     // Initialize TechnicalAgent
-    this.agentInstances.set('TechnicalAgent', new TechnicalAgent(this.memoryManager));
+    this.agentInstances.set('TechnicalAgent', new TechnicalAgentClass(this.memoryManager));
 
     // Initialize RegulatoryAgent
-    this.agentInstances.set('RegulatoryAgent', new RegulatoryAgent(this.memoryManager));
+    this.agentInstances.set('RegulatoryAgent', new RegulatoryAgentClass(this.memoryManager));
 
     // Initialize PropertyAgent
-    this.agentInstances.set('PropertyAgent', new PropertyAgent(this.memoryManager));
+    this.agentInstances.set('PropertyAgent', new PropertyAgentClass(this.memoryManager));
   }
 
   /**

@@ -601,7 +601,7 @@ export const complianceGapAnalysisTool = tool(
       assessmentScope,
       industry,
       targetCompliance,
-      gapAnalysis: gapAnalysis[assessmentScope] || gapAnalysis,
+      gapAnalysis: (gapAnalysis as any)[assessmentScope] || gapAnalysis,
       complianceScore,
       recommendations: [
         "Prioritize critical compliance gaps with immediate action",
@@ -864,7 +864,7 @@ export const policyImpactModelingTool = tool(
 export class RegulatoryAgent {
   private memoryManager: MemoryManager;
   private tools: any[];
-  private llm: ChatOpenAI;
+  private llm?: ChatOpenAI;
 
   constructor(memoryManager: MemoryManager, apiKey?: string) {
     this.memoryManager = memoryManager;
@@ -953,8 +953,8 @@ export class RegulatoryAgent {
         agentName: "RegulatoryAgent",
         taskId: task.id,
         status: 'failed',
-        data: { error: error.message },
-        insights: [`Regulatory analysis failed: ${error.message}`],
+        data: { error: error instanceof Error ? error.message : 'Unknown error' },
+        insights: [`Regulatory analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
         nextActions: ['Retry analysis with different parameters', 'Check regulatory data sources'],
         memoryItems: [],
         executionTime: Date.now() - startTime,
