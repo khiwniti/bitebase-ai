@@ -1,6 +1,6 @@
 import { StateGraph, START, END } from '@langchain/langgraph';
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
-import { BiteBaseResearchState, BiteBaseStateManager } from '../workflows/state.js';
+import { BiteBaseResearchState, BiteBaseStateManager, BiteBaseStateAnnotation, BiteBaseStateType } from '../workflows/state.js';
 import { ProductAnalysisAgent } from './ProductAnalysisAgent.js';
 import { PlaceAnalysisAgent } from './PlaceAnalysisAgent.js';
 import { PriceAnalysisAgent } from './PriceAnalysisAgent.js';
@@ -16,8 +16,8 @@ export class SupervisorAgent {
   private priceAgent: PriceAnalysisAgent;
   private promotionAgent: PromotionAnalysisAgent;
   private reportAgent: ReportGenerationAgent;
-  private workflow: StateGraph<BiteBaseResearchState>;
-  private activeSessions: Map<string, BiteBaseResearchState> = new Map();
+  private workflow: StateGraph<typeof BiteBaseStateAnnotation>;
+  private activeSessions: Map<string, BiteBaseStateType> = new Map();
 
   constructor(mcpManager: MCPManager) {
     this.mcpManager = mcpManager;
@@ -45,8 +45,8 @@ export class SupervisorAgent {
     logger.info('✅ All specialized agents initialized');
   }
 
-  private createWorkflow(): StateGraph<BiteBaseResearchState> {
-    const workflow = new StateGraph<BiteBaseResearchState>({});
+  private createWorkflow(): StateGraph<typeof BiteBaseStateAnnotation> {
+    const workflow = new StateGraph(BiteBaseStateAnnotation);
 
     // Add nodes for each agent
     workflow.addNode('supervisor', this.supervisorNode.bind(this));
@@ -81,7 +81,7 @@ export class SupervisorAgent {
     return workflow.compile();
   }
 
-  private async supervisorNode(state: BiteBaseResearchState): Promise<BiteBaseResearchState> {
+  private async supervisorNode(state: BiteBaseStateType): Promise<Partial<BiteBaseStateType>> {
     logger.info(`🎯 Supervisor coordinating research for session: ${state.sessionId}`);
     
     // Determine next action based on current state
@@ -89,25 +89,25 @@ export class SupervisorAgent {
     
     if (nextAgent) {
       logger.info(`📋 Delegating to ${nextAgent} agent`);
-      return BiteBaseStateManager.updateAgentStatus(
-        state,
-        nextAgent,
-        'running',
-        0
-      );
+      return {
+        progress: {
+          ...state.progress,
+          currentAgent: nextAgent
+        }
+      };
     } else {
       // All agents completed, move to report generation
       logger.info('📊 All analysis complete, generating final report');
-      return BiteBaseStateManager.updateAgentStatus(
-        state,
-        'report',
-        'running',
-        0
-      );
+      return {
+        progress: {
+          ...state.progress,
+          currentAgent: 'report'
+        }
+      };
     }
   }
 
-  private determineNextAgent(state: BiteBaseResearchState): string | null {
+  private determineNextAgent(state: BiteBaseStateType): string | null {
     // Check which agents haven't been completed yet
     if (state.productAnalysis.status === 'pending') return 'product';
     if (state.placeAnalysis.status === 'pending') return 'place';
@@ -118,7 +118,7 @@ export class SupervisorAgent {
     return null; // All complete
   }
 
-  private async routeToAgent(state: BiteBaseResearchState): Promise<string> {
+  private async routeToAgent(state: BiteBaseStateType): Promise<string> {
     const nextAgent = this.determineNextAgent(state);
     
     if (!nextAgent) {
@@ -128,111 +128,127 @@ export class SupervisorAgent {
     return nextAgent;
   }
 
-  private async productAnalysisNode(state: BiteBaseResearchState): Promise<BiteBaseResearchState> {
+  private async productAnalysisNode(state: BiteBaseStateType): Promise<Partial<BiteBaseStateType>> {
     try {
       logger.info('🍽️ Starting product analysis...');
       
       const result = await this.productAgent.analyze(state.parameters);
       
-      return BiteBaseStateManager.updateAgentStatus(
-        state,
-        'product',
-        'completed',
-        100,
-        result
-      );
+      return {
+        productAnalysis: {
+          status: 'completed',
+          data: result
+        },
+        progress: {
+          ...state.progress,
+          agentProgress: {
+            ...state.progress.agentProgress,
+            product: 100
+          }
+        }
+      };
     } catch (error) {
       logger.error('❌ Product analysis failed:', error);
-      return BiteBaseStateManager.updateAgentStatus(
-        state,
-        'product',
-        'error',
-        0,
-        undefined,
-        error instanceof Error ? error.message : 'Unknown error'
-      );
+      return {
+        productAnalysis: {
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      };
     }
   }
 
-  private async placeAnalysisNode(state: BiteBaseResearchState): Promise<BiteBaseResearchState> {
+  private async placeAnalysisNode(state: BiteBaseStateType): Promise<Partial<BiteBaseStateType>> {
     try {
       logger.info('📍 Starting place analysis...');
       
       const result = await this.placeAgent.analyze(state.parameters);
       
-      return BiteBaseStateManager.updateAgentStatus(
-        state,
-        'place',
-        'completed',
-        100,
-        result
-      );
+      return {
+        placeAnalysis: {
+          status: 'completed',
+          data: result
+        },
+        progress: {
+          ...state.progress,
+          agentProgress: {
+            ...state.progress.agentProgress,
+            place: 100
+          }
+        }
+      };
     } catch (error) {
       logger.error('❌ Place analysis failed:', error);
-      return BiteBaseStateManager.updateAgentStatus(
-        state,
-        'place',
-        'error',
-        0,
-        undefined,
-        error instanceof Error ? error.message : 'Unknown error'
-      );
+      return {
+        placeAnalysis: {
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      };
     }
   }
 
-  private async priceAnalysisNode(state: BiteBaseResearchState): Promise<BiteBaseResearchState> {
+  private async priceAnalysisNode(state: BiteBaseStateType): Promise<Partial<BiteBaseStateType>> {
     try {
       logger.info('💰 Starting price analysis...');
       
       const result = await this.priceAgent.analyze(state.parameters, state.productAnalysis.data);
       
-      return BiteBaseStateManager.updateAgentStatus(
-        state,
-        'price',
-        'completed',
-        100,
-        result
-      );
+      return {
+        priceAnalysis: {
+          status: 'completed',
+          data: result
+        },
+        progress: {
+          ...state.progress,
+          agentProgress: {
+            ...state.progress.agentProgress,
+            price: 100
+          }
+        }
+      };
     } catch (error) {
       logger.error('❌ Price analysis failed:', error);
-      return BiteBaseStateManager.updateAgentStatus(
-        state,
-        'price',
-        'error',
-        0,
-        undefined,
-        error instanceof Error ? error.message : 'Unknown error'
-      );
+      return {
+        priceAnalysis: {
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      };
     }
   }
 
-  private async promotionAnalysisNode(state: BiteBaseResearchState): Promise<BiteBaseResearchState> {
+  private async promotionAnalysisNode(state: BiteBaseStateType): Promise<Partial<BiteBaseStateType>> {
     try {
       logger.info('📢 Starting promotion analysis...');
       
       const result = await this.promotionAgent.analyze(state.parameters);
       
-      return BiteBaseStateManager.updateAgentStatus(
-        state,
-        'promotion',
-        'completed',
-        100,
-        result
-      );
+      return {
+        promotionAnalysis: {
+          status: 'completed',
+          data: result
+        },
+        progress: {
+          ...state.progress,
+          agentProgress: {
+            ...state.progress.agentProgress,
+            promotion: 100
+          }
+        }
+      };
     } catch (error) {
       logger.error('❌ Promotion analysis failed:', error);
-      return BiteBaseStateManager.updateAgentStatus(
-        state,
-        'promotion',
-        'error',
-        0,
-        undefined,
-        error instanceof Error ? error.message : 'Unknown error'
-      );
+      return {
+        promotionAnalysis: {
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      };
     }
   }
 
-  private async reportGenerationNode(state: BiteBaseResearchState): Promise<BiteBaseResearchState> {
+  private async reportGenerationNode(state: BiteBaseStateType): Promise<Partial<BiteBaseStateType>> {
     try {
       logger.info('📋 Starting report generation...');
       
@@ -243,31 +259,61 @@ export class SupervisorAgent {
         promotion: state.promotionAnalysis.data
       });
       
-      return BiteBaseStateManager.updateAgentStatus(
-        state,
-        'report',
-        'completed',
-        100,
-        result
-      );
+      return {
+        reportGeneration: {
+          status: 'completed',
+          data: result
+        },
+        progress: {
+          ...state.progress,
+          agentProgress: {
+            ...state.progress.agentProgress,
+            report: 100
+          },
+          status: 'completed'
+        }
+      };
     } catch (error) {
       logger.error('❌ Report generation failed:', error);
-      return BiteBaseStateManager.updateAgentStatus(
-        state,
-        'report',
-        'error',
-        0,
-        undefined,
-        error instanceof Error ? error.message : 'Unknown error'
-      );
+      return {
+        reportGeneration: {
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      };
     }
   }
 
-  async conductResearch(sessionId: string, parameters: any): Promise<BiteBaseResearchState> {
+  async conductResearch(sessionId: string, parameters: any): Promise<BiteBaseStateType> {
     logger.info(`🚀 Starting research for session: ${sessionId}`);
     
     // Create initial state
-    const initialState = BiteBaseStateManager.createInitialState(sessionId, parameters);
+    const initialState: BiteBaseStateType = {
+      sessionId,
+      parameters,
+      progress: {
+        currentAgent: 'initializing',
+        overallProgress: 0,
+        agentProgress: {
+          product: 0,
+          place: 0,
+          price: 0,
+          promotion: 0,
+          report: 0
+        },
+        status: 'initializing',
+        startTime: new Date()
+      },
+      productAnalysis: { status: 'pending' },
+      placeAnalysis: { status: 'pending' },
+      priceAnalysis: { status: 'pending' },
+      promotionAnalysis: { status: 'pending' },
+      reportGeneration: { status: 'pending' },
+      messages: [],
+      errors: [],
+      lastUpdate: new Date(),
+      subscribers: []
+    };
     
     // Store session
     this.activeSessions.set(sessionId, initialState);
@@ -285,14 +331,19 @@ export class SupervisorAgent {
     } catch (error) {
       logger.error(`❌ Research failed for session ${sessionId}:`, error);
       
-      const errorState = BiteBaseStateManager.updateAgentStatus(
-        initialState,
-        'supervisor',
-        'error',
-        0,
-        undefined,
-        error instanceof Error ? error.message : 'Unknown error'
-      );
+      const errorState: BiteBaseStateType = {
+        ...initialState,
+        progress: {
+          ...initialState.progress,
+          status: 'error'
+        },
+        errors: [{
+          agent: 'supervisor',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date(),
+          recovered: false
+        }]
+      };
       
       this.activeSessions.set(sessionId, errorState);
       throw error;
@@ -323,7 +374,7 @@ export class SupervisorAgent {
     }
   }
 
-  getSessionState(sessionId: string): BiteBaseResearchState | undefined {
+  getSessionState(sessionId: string): BiteBaseStateType | undefined {
     return this.activeSessions.get(sessionId);
   }
 

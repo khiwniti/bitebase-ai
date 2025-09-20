@@ -1,5 +1,5 @@
 import { BaseMessage } from '@langchain/core/messages';
-import { StateGraph, START, END } from '@langchain/langgraph';
+import { StateGraph, START, END, Annotation } from '@langchain/langgraph';
 
 // Core state interface for the BiteBase research workflow
 export interface BiteBaseResearchState {
@@ -336,5 +336,60 @@ export class BiteBaseStateManager {
   }
 }
 
-// Export the state type for use in other modules
-export type ResearchState = BiteBaseResearchState;
+// LangGraph State Schema Definition
+export const BiteBaseStateAnnotation = Annotation.Root({
+  sessionId: Annotation<string>,
+  parameters: Annotation<{
+    restaurantType: string;
+    cuisine: string;
+    location: string;
+    budget: { min: number; max: number };
+    radius: number;
+    targetCustomers?: string[];
+    businessModel?: 'dine-in' | 'delivery' | 'takeaway' | 'hybrid';
+  }>,
+  progress: Annotation<{
+    currentAgent: string;
+    overallProgress: number;
+    agentProgress: Record<string, number>;
+    status: 'initializing' | 'running' | 'completed' | 'error' | 'paused';
+    startTime: Date;
+    estimatedCompletion?: Date;
+  }>,
+  productAnalysis: Annotation<{
+    status: 'pending' | 'running' | 'completed' | 'error';
+    data?: any;
+    error?: string;
+  }>,
+  placeAnalysis: Annotation<{
+    status: 'pending' | 'running' | 'completed' | 'error';
+    data?: any;
+    error?: string;
+  }>,
+  priceAnalysis: Annotation<{
+    status: 'pending' | 'running' | 'completed' | 'error';
+    data?: any;
+    error?: string;
+  }>,
+  promotionAnalysis: Annotation<{
+    status: 'pending' | 'running' | 'completed' | 'error';
+    data?: any;
+    error?: string;
+  }>,
+  reportGeneration: Annotation<{
+    status: 'pending' | 'running' | 'completed' | 'error';
+    data?: any;
+    error?: string;
+  }>,
+  messages: Annotation<BaseMessage[]>,
+  errors: Annotation<Array<{
+    agent: string;
+    error: string;
+    timestamp: Date;
+    recovered: boolean;
+  }>>,
+  lastUpdate: Annotation<Date>,
+  subscribers: Annotation<string[]>
+});
+
+export type BiteBaseStateType = typeof BiteBaseStateAnnotation.State;
