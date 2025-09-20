@@ -1,6 +1,64 @@
 import { GeoPoint, CompetitorInfo } from '@/lib/geospatial-analysis';
 import { getConfig, UserMessages } from '@/config/production';
 
+// Enhanced interfaces for MCP integration
+export interface MCPScrapingResult {
+  source: 'wongnai' | 'foodpanda' | 'ddproperty' | 'renthub';
+  data: any[];
+  metadata: {
+    scrapedAt: Date;
+    totalRecords: number;
+    location?: string;
+    searchQuery?: string;
+    pagination?: {
+      currentPage: number;
+      totalPages: number;
+      hasMore: boolean;
+    };
+  };
+  errors?: string[];
+}
+
+export interface EnhancedScrapingParams {
+  source: 'wongnai' | 'foodpanda' | 'ddproperty' | 'renthub';
+  searchQuery: string;
+  location: {
+    district: string;
+    city: string;
+    coordinates?: GeoPoint;
+  };
+  filters: {
+    cuisine?: string;
+    priceRange?: { min: number; max: number };
+    radius?: number;
+    businessModel?: string;
+    propertyType?: string;
+  };
+  pagination?: {
+    maxPages: number;
+    waitBetweenPages: number;
+  };
+  timeout?: number;
+}
+
+export interface PropertyData {
+  id: string;
+  title: string;
+  address: string;
+  location: GeoPoint;
+  price: number;
+  pricePerSqm?: number;
+  size: number;
+  propertyType: 'retail' | 'office' | 'restaurant' | 'mixed';
+  amenities: string[];
+  contact: {
+    agent?: string;
+    phone?: string;
+  };
+  source: 'ddproperty' | 'renthub';
+  scrapedAt: Date;
+}
+
 // Data types for external restaurant API
 export interface ExternalRestaurantData {
   publicId: string;
@@ -90,12 +148,279 @@ export interface RestaurantMenu {
   };
 }
 
-// Restaurant data service class
-export class RestaurantDataService {
+// Enhanced Restaurant data service class with MCP integration
+export class EnhancedRestaurantDataService {
   private config = getConfig();
   private static readonly BASE_URL = getConfig().dataServices.restaurantAPI.baseUrl;
   private static readonly CACHE_DURATION = getConfig().dataServices.restaurantAPI.cacheTimeout;
   private cache = new Map<string, { data: any; timestamp: number }>();
+  private mcpEndpoint = '/api/mcp';
+
+  // Enhanced MCP-based scraping methods
+  async scrapeWithMCP(params: EnhancedScrapingParams): Promise<MCPScrapingResult> {
+    try {
+      const response = await fetch(`${this.mcpEndpoint}/scrape`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          server: 'playwright',
+          tool: 'scrape_website',
+          arguments: {
+            source: params.source,
+            searchQuery: params.searchQuery,
+            location: params.location,
+            filters: params.filters,
+            pagination: params.pagination,
+            timeout: params.timeout || 60000,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`MCP scraping failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      return {
+        source: params.source,
+        data: result.data || [],
+        metadata: {
+          scrapedAt: new Date(),
+          totalRecords: result.data?.length || 0,
+          location: `${params.location.district}, ${params.location.city}`,
+          searchQuery: params.searchQuery,
+          pagination: result.pagination,
+        },
+        errors: result.errors,
+      };
+    } catch (error) {
+      console.error('MCP scraping error:', error);
+      return {
+        source: params.source,
+        data: [],
+        metadata: {
+          scrapedAt: new Date(),
+          totalRecords: 0,
+          location: `${params.location.district}, ${params.location.city}`,
+          searchQuery: params.searchQuery,
+        },
+        errors: [error.message],
+      };
+    }
+  }
+
+  // Scrape Wongnai data using Playwright MCP
+  async scrapeWongnaiRestaurants(params: {
+    district: string;
+    cuisine?: string;
+    priceRange?: { min: number; max: number };
+    radius?: number;
+  }): Promise<MCPScrapingResult> {
+    const searchQuery = `${params.cuisine || 'restaurant'} ${params.district}`;
+    
+    return this.scrapeWithMCP({
+      source: 'wongnai',
+      searchQuery,
+      location: {
+        district: params.district,
+        city: 'Bangkok',
+      },
+      filters: {
+        cuisine: params.cuisine,
+        priceRange: params.priceRange,
+        radius: params.radius || 2,
+      },
+      pagination: {
+        maxPages: 5,
+        waitBetweenPages: 2000,
+      },
+      timeout: 90000,
+    });
+  }
+
+  // Scrape Food Panda data using Playwright MCP
+  async scrapeFoodPandaRestaurants(params: {
+    district: string;
+    cuisine?: string;
+    businessModel?: string;
+  }): Promise<MCPScrapingResult> {
+    const searchQuery = `${params.cuisine || 'food'} delivery ${params.district}`;
+    
+    return this.scrapeWithMCP({
+      source: 'foodpanda',
+      searchQuery,
+      location: {
+        district: params.district,
+        city: 'Bangkok',
+      },
+      filters: {
+        cuisine: params.cuisine,
+        businessModel: params.businessModel || 'delivery',
+      },
+      pagination: {
+        maxPages: 3,
+        waitBetweenPages: 3000,
+      },
+      timeout: 120000,
+    });
+  }
+
+  // Scrape property data from DDProperty
+  async scrapeDDPropertyData(params: {
+    district: string;
+    priceRange?: { min: number; max: number };
+    propertyType?: string;
+  }): Promise<MCPScrapingResult> {
+    const searchQuery = `${params.propertyType || 'commercial'} rent ${params.district}`;
+    
+    return this.scrapeWithMCP({
+      source: 'ddproperty',
+      searchQuery,
+      location: {
+        district: params.district,
+        city: 'Bangkok',
+      },
+      filters: {
+        priceRange: params.priceRange,
+        propertyType: params.propertyType || 'retail',
+      },
+      pagination: {
+        maxPages: 3,
+        waitBetweenPages: 2000,
+      },
+      timeout: 60000,
+    });
+  }
+
+  // Scrape property data from RentHub
+  async scrapeRentHubData(params: {
+    district: string;
+    priceRange?: { min: number; max: number };
+    propertyType?: string;
+  }): Promise<MCPScrapingResult> {
+    const searchQuery = `${params.propertyType || 'commercial'} space ${params.district}`;
+    
+    return this.scrapeWithMCP({
+      source: 'renthub',
+      searchQuery,
+      location: {
+        district: params.district,
+        city: 'Bangkok',
+      },
+      filters: {
+        priceRange: params.priceRange,
+        propertyType: params.propertyType || 'retail',
+      },
+      pagination: {
+        maxPages: 2,
+        waitBetweenPages: 3000,
+      },
+      timeout: 60000,
+    });
+  }
+
+  // Enhanced comprehensive data collection
+  async collectComprehensiveData(params: {
+    district: string;
+    cuisine: string;
+    priceRange: { min: number; max: number };
+    businessModel: string;
+    propertyType?: string;
+  }) {
+    const results = await Promise.allSettled([
+      this.scrapeWongnaiRestaurants({
+        district: params.district,
+        cuisine: params.cuisine,
+        priceRange: params.priceRange,
+      }),
+      this.scrapeFoodPandaRestaurants({
+        district: params.district,
+        cuisine: params.cuisine,
+        businessModel: params.businessModel,
+      }),
+      this.scrapeDDPropertyData({
+        district: params.district,
+        priceRange: params.priceRange,
+        propertyType: params.propertyType,
+      }),
+      this.scrapeRentHubData({
+        district: params.district,
+        priceRange: params.priceRange,
+        propertyType: params.propertyType,
+      }),
+    ]);
+
+    return {
+      wongnai: results[0].status === 'fulfilled' ? results[0].value : null,
+      foodpanda: results[1].status === 'fulfilled' ? results[1].value : null,
+      ddproperty: results[2].status === 'fulfilled' ? results[2].value : null,
+      renthub: results[3].status === 'fulfilled' ? results[3].value : null,
+      errors: results
+        .filter(r => r.status === 'rejected')
+        .map(r => (r as PromiseRejectedResult).reason.message),
+    };
+  }
+
+  // Transform property data
+  transformPropertyData(scrapingResult: MCPScrapingResult): PropertyData[] {
+    return scrapingResult.data.map(item => ({
+      id: item.id || `${scrapingResult.source}-${Math.random().toString(36)}`,
+      title: item.title || item.name || 'Property',
+      address: item.address || 'Address not available',
+      location: {
+        lat: item.latitude || item.lat || 0,
+        lng: item.longitude || item.lng || 0,
+      },
+      price: this.parsePrice(item.price || item.rent || 0),
+      pricePerSqm: this.parsePrice(item.pricePerSqm || item.sqmPrice || 0),
+      size: parseInt(item.size || item.area || '0'),
+      propertyType: this.mapPropertyType(item.type || item.category || 'retail'),
+      amenities: Array.isArray(item.amenities) ? item.amenities : [],
+      contact: {
+        agent: item.agent || item.contact?.name,
+        phone: item.phone || item.contact?.phone,
+      },
+      source: scrapingResult.source as 'ddproperty' | 'renthub',
+      scrapedAt: scrapingResult.metadata.scrapedAt,
+    }));
+  }
+
+  // Enhanced analytics with MCP data
+  async generateMarketAnalytics(comprehensiveData: any) {
+    try {
+      const response = await fetch(`${this.mcpEndpoint}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          server: 'sqlite',
+          tool: 'analyze_market_data',
+          arguments: {
+            wongnaiData: comprehensiveData.wongnai?.data || [],
+            foodpandaData: comprehensiveData.foodpanda?.data || [],
+            propertyData: [
+              ...(comprehensiveData.ddproperty?.data || []),
+              ...(comprehensiveData.renthub?.data || []),
+            ],
+          },
+        }),
+      });
+
+      return await response.json();
+    } catch (error) {
+      console.error('Analytics generation error:', error);
+      return null;
+    }
+  }
+
+  // Helper method to map property types
+  private mapPropertyType(type: string): 'retail' | 'office' | 'restaurant' | 'mixed' {
+    const lowerType = type.toLowerCase();
+    if (lowerType.includes('retail') || lowerType.includes('shop')) return 'retail';
+    if (lowerType.includes('office')) return 'office';
+    if (lowerType.includes('restaurant') || lowerType.includes('food')) return 'restaurant';
+    return 'mixed';
+  }
 
   // Fetch restaurants from external API
   async fetchRestaurants(params: {
@@ -409,5 +734,6 @@ export class RestaurantDataService {
   }
 }
 
-// Singleton instance
+// Singleton instances
 export const restaurantDataService = new RestaurantDataService();
+export const enhancedRestaurantDataService = new EnhancedRestaurantDataService();

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { 
   RestaurantRequirements, 
   ProductAnalysis, 
@@ -11,6 +11,50 @@ import {
   AgentStatus,
   ChatMessage as SharedChatMessage
 } from '@/shared/types';
+import { io, Socket } from 'socket.io-client';
+
+// Enhanced types for LangGraph integration
+export interface LangGraphState {
+  sessionId: string;
+  workflowId?: string;
+  currentNode: string;
+  agentProgress: Record<string, {
+    status: 'pending' | 'running' | 'completed' | 'failed' | 'paused';
+    progress: number;
+    currentTask: string;
+    startTime?: Date;
+    endTime?: Date;
+    error?: string;
+  }>;
+  overallProgress: number;
+  mcpServerStatus: Record<string, {
+    connected: boolean;
+    lastHealthCheck: Date;
+    errorCount: number;
+  }>;
+  errors: Array<{
+    agentId: string;
+    error: string;
+    timestamp: Date;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+  }>;
+}
+
+export interface EnhancedRestaurantParams {
+  type: string;
+  cuisine: string;
+  location: {
+    address: string;
+    district: string;
+    city: string;
+    coordinates?: { lat: number; lng: number; };
+  };
+  budget: { min: number; max: number; };
+  targetCustomers: string[];
+  businessModel: 'dine-in' | 'delivery' | 'takeaway' | 'hybrid';
+  radius: number;
+  capacity?: number;
+}
 
 export interface ChatMessage extends SharedChatMessage {
   // Extended for local context if needed
@@ -19,6 +63,7 @@ export interface ChatMessage extends SharedChatMessage {
 export interface Report extends ComprehensiveReport {
   chatHistory: ChatMessage[];
   agentStatuses: Record<string, AgentStatus>;
+  langGraphState?: LangGraphState;
   analysisProgress: {
     product: number;
     place: number;
@@ -27,16 +72,36 @@ export interface Report extends ComprehensiveReport {
   };
   researchData: {
     requirements?: RestaurantRequirements;
+    enhancedParams?: EnhancedRestaurantParams;
     productAnalysis?: ProductAnalysis;
     placeAnalysis?: PlaceAnalysis;
     priceAnalysis?: PriceAnalysis;
     promotionAnalysis?: PromotionAnalysis;
+  };
+  realTimeConnection?: {
+    sessionId: string;
+    connected: boolean;
+    lastUpdate: Date;
   };
 }
 
 interface ReportsContextType {
   reports: Report[];
   currentReport: Report | null;
+  
+  // Enhanced LangGraph Integration
+  startLangGraphAnalysis: (reportId: string, params: EnhancedRestaurantParams) => Promise<void>;
+  streamLangGraphUpdates: (reportId: string, callback: (update: LangGraphState) => void) => () => void;
+  pauseAnalysis: (reportId: string) => Promise<void>;
+  resumeAnalysis: (reportId: string) => Promise<void>;
+  cancelAnalysis: (reportId: string) => Promise<void>;
+  
+  // Enhanced State Management
+  updateLangGraphState: (reportId: string, state: Partial<LangGraphState>) => void;
+  getMCPServerStatus: () => Promise<Record<string, any>>;
+  getAgentHealth: () => Promise<any>;
+  
+  // Existing methods
   createReport: (title: string, description: string, requirements?: RestaurantRequirements) => Report;
   updateReport: (reportId: string, updates: Partial<Report>) => void;
   deleteReport: (reportId: string) => void;
@@ -47,9 +112,12 @@ interface ReportsContextType {
   setAnalysisData: (reportId: string, analysisType: keyof Report['researchData'], data: any) => void;
   generateFinalReport: (reportId: string) => Promise<void>;
   getReportById: (reportId: string) => Report | undefined;
-  // Real-time collaboration
+  
+  // Enhanced Real-time collaboration
   subscribeToReportUpdates: (reportId: string, callback: (report: Report) => void) => () => void;
   broadcastUpdate: (reportId: string, update: Partial<Report>) => void;
+  shareReport: (reportId: string, collaboratorIds: string[]) => Promise<void>;
+  inviteCollaborator: (reportId: string, email: string, permissions: string[]) => Promise<void>;
 }
 
 const ReportsContext = createContext<ReportsContextType | undefined>(undefined);
@@ -69,6 +137,272 @@ interface ReportsProviderProps {
 export const ReportsProvider: React.FC<ReportsProviderProps> = ({ children }) => {
   const [reports, setReports] = useState<Report[]>([]);
   const [currentReport, setCurrentReport] = useState<Report | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [langGraphConnections, setLangGraphConnections] = useState<Map<string, EventSource>>(new Map());
+
+  // Initialize WebSocket connection for real-time updates
+  useEffect(() => {
+    const socketConnection = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001', {
+      transports: ['websocket'],
+    });
+
+    socketConnection.on('connect', () => {
+      console.log('Connected to real-time server');
+    });
+
+    socketConnection.on('report-update', (data: { reportId: string; update: Partial<Report> }) => {
+      updateReport(data.reportId, data.update);
+    });
+
+    socketConnection.on('langgraph-update', (data: { reportId: string; state: LangGraphState }) => {
+      updateLangGraphState(data.reportId, data.state);
+    });
+
+    setSocket(socketConnection);
+
+    return () => {
+      socketConnection.disconnect();
+      // Close all EventSource connections
+      langGraphConnections.forEach(connection => connection.close());
+    };
+  }, []);
+
+  // Enhanced LangGraph Analysis Methods
+  const startLangGraphAnalysis = useCallback(async (reportId: string, params: EnhancedRestaurantParams) => {
+    try {
+      const response = await fetch('/api/agent/start-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportId,
+          restaurantParams: params,
+          analysisType: 'comprehensive',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start LangGraph analysis');
+      }
+
+      const result = await response.json();
+      
+      // Update report with initial LangGraph state
+      updateReport(reportId, {
+        langGraphState: {
+          sessionId: result.sessionId,
+          workflowId: result.workflowId,
+          currentNode: 'initialize',
+          agentProgress: {},
+          overallProgress: 0,
+          mcpServerStatus: {},
+          errors: [],
+        },
+        realTimeConnection: {
+          sessionId: result.sessionId,
+          connected: true,
+          lastUpdate: new Date(),
+        },
+      });
+
+      // Start streaming updates
+      streamLangGraphUpdates(reportId, (update) => {
+        updateLangGraphState(reportId, update);
+      });
+
+    } catch (error) {
+      console.error('Error starting LangGraph analysis:', error);
+      addChatMessage(reportId, {
+        role: 'system',
+        content: `Error starting analysis: ${error.message}`,
+        messageType: 'error',
+      });
+    }
+  }, []);
+
+  const streamLangGraphUpdates = useCallback((reportId: string, callback: (update: LangGraphState) => void) => {
+    const report = getReportById(reportId);
+    if (!report?.langGraphState?.sessionId) {
+      console.warn('No session ID found for streaming updates');
+      return () => {};
+    }
+
+    const eventSource = new EventSource(
+      `/api/agent/stream/${report.langGraphState.sessionId}`
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const update = JSON.parse(event.data);
+        callback(update);
+        
+        // Update real-time connection status
+        updateReport(reportId, {
+          realTimeConnection: {
+            ...report.realTimeConnection!,
+            lastUpdate: new Date(),
+          },
+        });
+      } catch (error) {
+        console.error('Error parsing stream update:', error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('EventSource error:', error);
+      updateReport(reportId, {
+        realTimeConnection: {
+          ...report.realTimeConnection!,
+          connected: false,
+        },
+      });
+    };
+
+    // Store connection for cleanup
+    langGraphConnections.set(reportId, eventSource);
+
+    return () => {
+      eventSource.close();
+      langGraphConnections.delete(reportId);
+    };
+  }, [langGraphConnections]);
+
+  const pauseAnalysis = useCallback(async (reportId: string) => {
+    const report = getReportById(reportId);
+    if (!report?.langGraphState?.sessionId) return;
+
+    try {
+      await fetch(`/api/agent/pause/${report.langGraphState.sessionId}`, {
+        method: 'POST',
+      });
+      
+      updateLangGraphState(reportId, { currentNode: 'paused' });
+    } catch (error) {
+      console.error('Error pausing analysis:', error);
+    }
+  }, []);
+
+  const resumeAnalysis = useCallback(async (reportId: string) => {
+    const report = getReportById(reportId);
+    if (!report?.langGraphState?.sessionId) return;
+
+    try {
+      await fetch(`/api/agent/resume/${report.langGraphState.sessionId}`, {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Error resuming analysis:', error);
+    }
+  }, []);
+
+  const cancelAnalysis = useCallback(async (reportId: string) => {
+    const report = getReportById(reportId);
+    if (!report?.langGraphState?.sessionId) return;
+
+    try {
+      await fetch(`/api/agent/cancel/${report.langGraphState.sessionId}`, {
+        method: 'POST',
+      });
+      
+      // Close streaming connection
+      const connection = langGraphConnections.get(reportId);
+      if (connection) {
+        connection.close();
+        langGraphConnections.delete(reportId);
+      }
+      
+      updateLangGraphState(reportId, { currentNode: 'cancelled' });
+    } catch (error) {
+      console.error('Error cancelling analysis:', error);
+    }
+  }, [langGraphConnections]);
+
+  const updateLangGraphState = useCallback((reportId: string, state: Partial<LangGraphState>) => {
+    setReports(prev => prev.map(report => 
+      report.reportId === reportId 
+        ? { 
+            ...report, 
+            langGraphState: { ...report.langGraphState, ...state },
+            generatedAt: new Date()
+          }
+        : report
+    ));
+
+    if (currentReport?.reportId === reportId) {
+      setCurrentReport(prev => prev ? {
+        ...prev,
+        langGraphState: { ...prev.langGraphState, ...state },
+        generatedAt: new Date()
+      } : null);
+    }
+
+    // Sync agent progress with analysis progress
+    if (state.agentProgress) {
+      const progressMapping: Record<string, keyof Report['analysisProgress']> = {
+        'product-analysis': 'product',
+        'place-analysis': 'place',
+        'price-analysis': 'price',
+        'promotion-analysis': 'promotion',
+      };
+
+      Object.entries(state.agentProgress).forEach(([agentId, progress]) => {
+        const analysisType = progressMapping[agentId];
+        if (analysisType) {
+          updateAnalysisProgress(reportId, analysisType, progress.progress);
+        }
+      });
+    }
+  }, [currentReport]);
+
+  const getMCPServerStatus = useCallback(async () => {
+    try {
+      const response = await fetch('/api/agent/mcp-status');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching MCP server status:', error);
+      return {};
+    }
+  }, []);
+
+  const getAgentHealth = useCallback(async () => {
+    try {
+      const response = await fetch('/api/agent/health');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching agent health:', error);
+      return { status: 'unknown' };
+    }
+  }, []);
+
+  // Enhanced collaboration methods
+  const shareReport = useCallback(async (reportId: string, collaboratorIds: string[]) => {
+    if (!socket) return;
+
+    socket.emit('share-report', { reportId, collaboratorIds });
+    
+    updateReport(reportId, {
+      // Add collaboration metadata
+      generatedAt: new Date(),
+    });
+  }, [socket]);
+
+  const inviteCollaborator = useCallback(async (reportId: string, email: string, permissions: string[]) => {
+    try {
+      const response = await fetch('/api/collaboration/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId, email, permissions }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to invite collaborator');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error inviting collaborator:', error);
+      throw error;
+    }
+  }, []);
 
   // Load reports from localStorage on mount
   useEffect(() => {
@@ -324,6 +658,20 @@ export const ReportsProvider: React.FC<ReportsProviderProps> = ({ children }) =>
   const value: ReportsContextType = {
     reports,
     currentReport,
+    
+    // Enhanced LangGraph Integration
+    startLangGraphAnalysis,
+    streamLangGraphUpdates,
+    pauseAnalysis,
+    resumeAnalysis,
+    cancelAnalysis,
+    
+    // Enhanced State Management
+    updateLangGraphState,
+    getMCPServerStatus,
+    getAgentHealth,
+    
+    // Existing methods
     createReport,
     updateReport,
     deleteReport,
@@ -334,8 +682,12 @@ export const ReportsProvider: React.FC<ReportsProviderProps> = ({ children }) =>
     setAnalysisData,
     generateFinalReport,
     getReportById,
+    
+    // Enhanced Real-time collaboration
     subscribeToReportUpdates,
-    broadcastUpdate
+    broadcastUpdate,
+    shareReport,
+    inviteCollaborator,
   };
 
   return (
