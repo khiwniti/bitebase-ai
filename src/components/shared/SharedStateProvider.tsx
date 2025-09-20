@@ -339,7 +339,7 @@ interface GenerativeUICommand {
   result?: any;
 }
 
-interface MapState {
+export interface MapState {
   // Core map state
   zoom: number;
   center: { lat: number; lng: number };
@@ -736,7 +736,7 @@ const SharedStateContext = createContext<SharedStateContextType | undefined>(und
 
 export function SharedStateProvider({ children }: { children: React.ReactNode }) {
   const [mapState, setMapState] = useState<MapState>(initialState);
-  const syncTimeoutRef = useRef<NodeJS.Timeout>();
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const commandQueueRef = useRef<GenerativeUICommand[]>([]);
 
   // Enhanced sync mechanism with debouncing
