@@ -1,7 +1,17 @@
-// BiteBase Intelligence API Service
-// Professional restaurant market research platform backend service
+/**
+ * BiteBase Intelligence API Service
+ * Production-ready restaurant market research platform backend service
+ * Integrates with real data sources for comprehensive market analysis
+ */
 
-import { RestaurantData, DemographicProfile, MarketAnalysis } from '@/components/shared/SharedStateProvider';
+import { 
+  RestaurantRequirements, 
+  ProductAnalysis, 
+  PlaceAnalysis, 
+  PriceAnalysis, 
+  PromotionAnalysis 
+} from '@/shared/types';
+import { getConfig } from '@/config/production';
 
 export interface GeospatialQuery {
   center: { lat: number; lng: number };

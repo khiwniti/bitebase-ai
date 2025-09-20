@@ -18,6 +18,12 @@
     "@langchain/langgraph": "^0.2.57",
     "@langchain/langgraph-checkpoint": "^0.0.16",
     "@langchain/openai": "^0.3.14",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "echarts": "^5.5.1",
+    "mermaid": "^11.5.0",
+    "playwright": "^1.48.2",
+    "sqlite3": "^5.1.7",
+    "ws": "^8.18.0",
     "zod": "^3.23.8"
   },
   "pnpm": {
