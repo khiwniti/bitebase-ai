@@ -11,6 +11,7 @@ import {
   PriceAnalysis, 
   PromotionAnalysis 
 } from '@/shared/types';
+import { RestaurantData } from '@/components/shared/SharedStateProvider';
 import { getConfig } from '@/config/production';
 
 export interface GeospatialQuery {

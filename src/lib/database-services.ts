@@ -53,7 +53,7 @@ export class UserService {
     });
   }
 
-  static async update(id: string, data: Partial<User>) {
+  static async update(id: string, data: any) {
     return prisma.user.update({
       where: { id },
       data,
@@ -103,7 +103,7 @@ export class SessionService {
     });
   }
 
-  static async update(sessionId: string, data: Partial<Session>) {
+  static async update(sessionId: string, data: any) {
     return prisma.session.update({
       where: { sessionId },
       data,
@@ -191,7 +191,7 @@ export class MarketReportService {
     };
   }
 
-  static async update(id: string, data: Partial<MarketReport>) {
+  static async update(id: string, data: any) {
     return prisma.marketReport.update({
       where: { id },
       data,
@@ -277,7 +277,7 @@ export class DeliveryMarketAnalysisService {
     });
   }
 
-  static async update(id: string, data: Partial<DeliveryMarketAnalysis>) {
+  static async update(id: string, data: any) {
     return prisma.deliveryMarketAnalysis.update({
       where: { id },
       data,
@@ -315,7 +315,7 @@ export class CustomerBehaviorAnalysisService {
     });
   }
 
-  static async update(id: string, data: Partial<CustomerBehaviorAnalysis>) {
+  static async update(id: string, data: any) {
     return prisma.customerBehaviorAnalysis.update({
       where: { id },
       data,
@@ -354,7 +354,7 @@ export class PropertyMarketAnalysisService {
     });
   }
 
-  static async update(id: string, data: Partial<PropertyMarketAnalysis>) {
+  static async update(id: string, data: any) {
     return prisma.propertyMarketAnalysis.update({
       where: { id },
       data,
@@ -392,7 +392,7 @@ export class AccommodationDensityAnalysisService {
     });
   }
 
-  static async update(id: string, data: Partial<AccommodationDensityAnalysis>) {
+  static async update(id: string, data: any) {
     return prisma.accommodationDensityAnalysis.update({
       where: { id },
       data,
@@ -430,7 +430,7 @@ export class TouristFlowAnalysisService {
     });
   }
 
-  static async update(id: string, data: Partial<TouristFlowAnalysis>) {
+  static async update(id: string, data: any) {
     return prisma.touristFlowAnalysis.update({
       where: { id },
       data,
@@ -497,7 +497,7 @@ export class ChatSessionService {
     };
   }
 
-  static async update(sessionId: string, data: Partial<ChatSession>) {
+  static async update(sessionId: string, data: any) {
     return prisma.chatSession.update({
       where: { sessionId },
       data: { ...data, updatedAt: new Date() },
@@ -535,7 +535,7 @@ export class ChatMessageService {
     });
   }
 
-  static async update(id: string, data: Partial<ChatMessage>) {
+  static async update(id: string, data: any) {
     return prisma.chatMessage.update({
       where: { id },
       data,
@@ -831,7 +831,7 @@ export class CompetitorDataService {
     });
   }
 
-  static async update(id: string, data: Partial<CompetitorData>) {
+  static async update(id: string, data: any) {
     return prisma.competitorData.update({
       where: { id },
       data: { ...data, lastUpdated: new Date() },
@@ -901,7 +901,7 @@ export class MarketTrendService {
       ? {
           region: {
             contains: region,
-            mode: 'insensitive',
+            mode: 'insensitive' as const,
           },
         }
       : {};
@@ -913,7 +913,7 @@ export class MarketTrendService {
     });
   }
 
-  static async update(id: string, data: Partial<MarketTrend>) {
+  static async update(id: string, data: any) {
     return prisma.marketTrend.update({
       where: { id },
       data,

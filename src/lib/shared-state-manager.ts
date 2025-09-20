@@ -51,7 +51,7 @@ interface SharedState {
   wsProvider?: WebsocketProvider;
   
   // Actions
-  setCurrentInterface: (interface: 'chat' | 'map' | 'report') => void;
+  setCurrentInterface: (interfaceType: 'chat' | 'map' | 'report') => void;
   updateSynchronizedData: (data: Partial<Record<string, any>>) => void;
   addGenerativeComponent: (component: GenerativeUIComponent) => void;
   updateGenerativeComponent: (componentId: string, updates: Partial<GenerativeUIComponent>) => void;
@@ -79,7 +79,7 @@ export const useSharedState = create<SharedState>()(
     chatMessages: [],
     
     // Actions
-    setCurrentInterface: (interface) => {
+    setCurrentInterface: (interfaceType) => {
       const currentState = get();
       const change: StateChange = {
         changeId: crypto.randomUUID(),
@@ -88,11 +88,11 @@ export const useSharedState = create<SharedState>()(
         action: 'interface_change',
         component: 'global',
         oldValue: currentState.currentInterface,
-        newValue: interface,
+        newValue: interfaceType,
       };
       
       set({
-        currentInterface: interface,
+        currentInterface: interfaceType,
         version: currentState.version + 1,
         lastModified: new Date(),
         changeLog: [...currentState.changeLog, change],
@@ -193,6 +193,7 @@ export const useSharedState = create<SharedState>()(
           action: 'component_remove',
           component: componentId,
           oldValue: componentToRemove,
+          newValue: null,
         };
         
         set({

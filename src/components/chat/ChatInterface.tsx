@@ -151,8 +151,12 @@ export default function ChatInterface({ className = "", initialMessage, reportId
   const formattedMessages = useMemo(() => {
     if (!currentReport?.chatHistory) return [];
     return currentReport.chatHistory.map(msg => ({
-      ...msg,
-      type: 'text' as const
+      id: msg.messageId,
+      content: msg.content,
+      sender: msg.sender === 'agent' ? 'ai' as const : msg.sender === 'user' ? 'user' as const : 'ai' as const,
+      timestamp: msg.timestamp,
+      type: 'text' as const,
+      metadata: msg.metadata
     }));
   }, [currentReport?.chatHistory]);
 
@@ -244,7 +248,9 @@ export default function ChatInterface({ className = "", initialMessage, reportId
     if (currentReport && reportId) {
       addChatMessage(reportId, {
         content,
-        sender: "user"
+        sender: "user",
+        metadata: {},
+        messageType: "user_query"
       });
     }
     
@@ -274,7 +280,9 @@ export default function ChatInterface({ className = "", initialMessage, reportId
     if (currentReport && reportId) {
       addChatMessage(reportId, {
         content,
-        sender: "ai"
+        sender: "agent",
+        metadata: metadata || {},
+        messageType: "agent_response"
       });
     }
   }, [mapState.markers.length, currentReport, reportId, addChatMessage]);

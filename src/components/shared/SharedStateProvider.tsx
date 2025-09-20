@@ -736,7 +736,7 @@ const SharedStateContext = createContext<SharedStateContextType | undefined>(und
 
 export function SharedStateProvider({ children }: { children: React.ReactNode }) {
   const [mapState, setMapState] = useState<MapState>(initialState);
-  const syncTimeoutRef = useRef<NodeJS.Timeout>();
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const commandQueueRef = useRef<GenerativeUICommand[]>([]);
 
   // Enhanced sync mechanism with debouncing

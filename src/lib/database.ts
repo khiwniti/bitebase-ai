@@ -38,6 +38,6 @@ export async function healthCheck() {
     await prisma.$queryRaw`SELECT 1`;
     return { status: 'healthy', timestamp: new Date().toISOString() };
   } catch (error) {
-    return { status: 'unhealthy', error: error.message, timestamp: new Date().toISOString() };
+    return { status: 'unhealthy', error: (error as Error)?.message || String(error), timestamp: new Date().toISOString() };
   }
 }

@@ -2,12 +2,11 @@
 
 import React from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useReports } from '@/contexts/ReportsContext';
+import { useReports, Report } from '@/contexts/ReportsContext';
 import { AppLayout } from '@/components/ui/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ReportTemplateRenderer } from '@/components/reports/ReportTemplateRenderer';
 import { 
   MessageSquare, 
   Download, 
@@ -58,12 +57,23 @@ export default function ReportDetailPage() {
 
   const handleContinueChat = () => {
     setCurrentReport(report);
-    router.push(`/chat?reportId=${report.id}`);
+    router.push(`/chat?reportId=${report.reportId}`);
   };
 
   const handleEditReport = () => {
     setCurrentReport(report);
-    router.push(`/research?reportId=${report.id}`);
+    router.push(`/research?reportId=${report.reportId}`);
+  };
+
+  const getReportStatus = (report: Report): string => {
+    // Derive status based on report content
+    if (report.executiveSummary && report.keyFindings.length > 0 && report.recommendations.length > 0) {
+      return 'completed';
+    }
+    if (report.chatHistory.length > 0 || report.sections.length > 0) {
+      return 'in_progress';
+    }
+    return 'draft';
   };
 
   const getStatusColor = (status: string) => {
@@ -128,8 +138,8 @@ export default function ReportDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Status</p>
-                  <Badge className={getStatusColor(report.status)}>
-                    {getStatusLabel(report.status)}
+                  <Badge className={getStatusColor(getReportStatus(report))}>
+                    {getStatusLabel(getReportStatus(report))}
                   </Badge>
                 </div>
               </div>
@@ -140,7 +150,7 @@ export default function ReportDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Created</p>
-                  <p className="text-sm text-gray-900">{format(report.createdAt, 'MMM dd, yyyy')}</p>
+                  <p className="text-sm text-gray-900">{format(report.generatedAt, 'MMM dd, yyyy')}</p>
                 </div>
               </div>
               
@@ -160,7 +170,7 @@ export default function ReportDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Last Updated</p>
-                  <p className="text-sm text-gray-900">{format(report.updatedAt, 'MMM dd, yyyy')}</p>
+                  <p className="text-sm text-gray-900">{format(report.generatedAt, 'MMM dd, yyyy')}</p>
                 </div>
               </div>
             </div>
@@ -177,7 +187,7 @@ export default function ReportDetailPage() {
       {/* Report Content */}
       <div className="space-y-8">
         {/* Generated Insights */}
-        {report.insights && report.insights.length > 0 && (
+        {report.keyFindings && report.keyFindings.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -187,10 +197,10 @@ export default function ReportDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {report.insights.map((insight, index) => (
+                {report.keyFindings.map((finding, index) => (
                   <div key={index} className="flex items-start space-x-3 p-3 bg-orange-50 rounded-lg">
                     <div className="w-2 h-2 bg-orange-500 rounded-full mt-2"></div>
-                    <p className="text-gray-700">{insight}</p>
+                    <p className="text-gray-700">{finding}</p>
                   </div>
                 ))}
               </div>
@@ -198,8 +208,34 @@ export default function ReportDetailPage() {
           </Card>
         )}
 
-        {/* Report Template Content */}
-        <ReportTemplateRenderer report={report} />
+        {/* Report Sections */}
+        {report.sections && report.sections.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Report Sections</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {report.sections.map((section) => (
+                  <div key={section.sectionId} className="border-l-4 border-orange-500 pl-4">
+                    <h3 className="font-semibold text-lg">{section.title}</h3>
+                    <p className="text-gray-700 mt-2">{section.content}</p>
+                    {section.recommendations && section.recommendations.length > 0 && (
+                      <div className="mt-3">
+                        <h4 className="font-medium text-sm text-gray-600">Recommendations:</h4>
+                        <ul className="list-disc list-inside text-sm text-gray-700 mt-1">
+                          {section.recommendations.map((rec, index) => (
+                            <li key={index}>{rec}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Chat History Summary */}
         {report.chatHistory.length > 0 && (
@@ -215,15 +251,15 @@ export default function ReportDetailPage() {
                 {report.chatHistory.slice(-5).map((message, index) => (
                   <div key={index} className="flex space-x-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-                      message.role === 'user' 
+                      message.sender === 'user' 
                         ? 'bg-gray-100 text-gray-600' 
                         : 'bg-gradient-to-r from-orange-500 to-red-600 text-white'
                     }`}>
-                      {message.role === 'user' ? 'U' : 'AI'}
+                      {message.sender === 'user' ? 'U' : 'AI'}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm text-gray-600 mb-1">
-                        {message.role === 'user' ? 'You' : 'BiteBase AI'} • {format(message.timestamp, 'MMM dd, HH:mm')}
+                        {message.sender === 'user' ? 'You' : 'BiteBase AI'} • {format(message.timestamp, 'MMM dd, HH:mm')}
                       </p>
                       <p className="text-gray-900">{message.content.substring(0, 200)}...</p>
                     </div>

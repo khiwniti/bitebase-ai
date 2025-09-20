@@ -46,7 +46,7 @@ export default function ReportsPage() {
       setIsCreateDialogOpen(false);
 
       // Navigate to chat with the new report
-      router.push(`/chat?reportId=${report.id}`);
+      router.push(`/chat?reportId=${report.reportId}`);
     }
   };
 
@@ -57,24 +57,35 @@ export default function ReportsPage() {
       "Generated from existing chat conversations and insights"
     );
     setCurrentReport(report);
-    router.push(`/reports/${report.id}/generate`);
+    router.push(`/reports/${report.reportId}/generate`);
   };
 
   const handleOpenReport = (report: Report) => {
     setCurrentReport(report);
-    router.push(`/chat?reportId=${report.id}`);
+    router.push(`/chat?reportId=${report.reportId}`);
   };
 
   const handleViewReport = (report: Report) => {
     setCurrentReport(report);
-    router.push(`/reports/${report.id}`);
+    router.push(`/reports/${report.reportId}`);
   };
 
   const handleDeleteReport = (reportId: string) => {
     deleteReport(reportId);
   };
 
-  const getStatusColor = (status: Report['status']) => {
+  const getReportStatus = (report: Report): string => {
+    // Derive status based on report content
+    if (report.executiveSummary && report.keyFindings.length > 0 && report.recommendations.length > 0) {
+      return 'completed';
+    }
+    if (report.chatHistory.length > 0 || report.sections.length > 0) {
+      return 'in_progress';
+    }
+    return 'draft';
+  };
+
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800 border-green-200';
       case 'in_progress': return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -83,7 +94,7 @@ export default function ReportsPage() {
     }
   };
 
-  const getStatusLabel = (status: Report['status']) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
       case 'completed': return 'Completed';
       case 'in_progress': return 'In Progress';
@@ -93,8 +104,8 @@ export default function ReportsPage() {
   };
 
   // Statistics for dashboard header
-  const completedReports = reports.filter(r => r.status === 'completed').length;
-  const inProgressReports = reports.filter(r => r.status === 'in_progress').length;
+  const completedReports = reports.filter(r => getReportStatus(r) === 'completed').length;
+  const inProgressReports = reports.filter(r => getReportStatus(r) === 'in_progress').length;
   const totalMessages = reports.reduce((acc, r) => acc + r.chatHistory.length, 0);
 
   return (
@@ -250,13 +261,13 @@ export default function ReportsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {reports.map((report) => (
-            <Card key={report.id} className="hover:shadow-lg transition-all hover:border-orange-300 cursor-pointer">
+            <Card key={report.reportId} className="hover:shadow-lg transition-all hover:border-orange-300 cursor-pointer">
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg mb-2">{report.title}</CardTitle>
-                    <Badge className={getStatusColor(report.status)}>
-                      {getStatusLabel(report.status)}
+                    <Badge className={getStatusColor(getReportStatus(report))}>
+                      {getStatusLabel(getReportStatus(report))}
                     </Badge>
                   </div>
                   <DropdownMenu>
@@ -275,7 +286,7 @@ export default function ReportsPage() {
                         View Report
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleDeleteReport(report.id)}
+                        onClick={() => handleDeleteReport(report.reportId)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
@@ -298,7 +309,7 @@ export default function ReportsPage() {
                     </span>
                     <span className="flex items-center space-x-1">
                       <Calendar className="h-3 w-3" />
-                      <span>{format(report.updatedAt, 'MMM dd')}</span>
+                      <span>{format(report.generatedAt, 'MMM dd')}</span>
                     </span>
                   </div>
                 </div>

@@ -1,10 +1,11 @@
-import { AnalysisResult } from './generative-ui';
+// import { AnalysisResult } from './generative-ui';
 // Remove the problematic import for now
 // import { AIAction, AIActionResult } from '@/components/shared/EnhancedSharedStateProvider';
 
 // Temporary types for build
 type AIAction = any;
 type AIActionResult = any;
+type AnalysisResult = any;
 
 // Workflow types
 export interface WorkflowStep {

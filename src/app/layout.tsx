@@ -1,4 +1,3 @@
-import { TempoInit } from "@/components/tempo-init";
 import { ReportsProvider } from "@/contexts/ReportsContext";
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
@@ -33,7 +32,6 @@ export default function RootLayout({
         <ReportsProvider>
           {children}
         </ReportsProvider>
-        <TempoInit />
       </body>
     </html>
   );

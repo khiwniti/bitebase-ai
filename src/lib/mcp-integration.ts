@@ -147,22 +147,22 @@ export class MCPIntegrationManager {
     
     try {
       // Start the MCP server process
-      const process = spawn(server.config.command, server.config.args, {
+      const childProcess = spawn(server.config.command, server.config.args, {
         env: { ...process.env, ...server.config.env },
         stdio: ['pipe', 'pipe', 'pipe']
       });
 
-      server.process = process;
+      server.process = childProcess;
 
       // Handle process events
-      process.on('error', (error) => {
+      childProcess.on('error', (error) => {
         console.error(`MCP Server ${serverName} error:`, error);
         server.status = 'error';
-        server.lastError = error.message;
+        server.lastError = (error as Error)?.message || String(error);
         this.scheduleRestart(serverName);
       });
 
-      process.on('exit', (code) => {
+      childProcess.on('exit', (code) => {
         console.log(`MCP Server ${serverName} exited with code:`, code);
         if (code !== 0) {
           server.status = 'error';
@@ -174,11 +174,11 @@ export class MCPIntegrationManager {
       });
 
       // Log output for debugging
-      process.stdout?.on('data', (data) => {
+      childProcess.stdout?.on('data', (data) => {
         console.log(`MCP Server ${serverName} stdout:`, data.toString());
       });
 
-      process.stderr?.on('data', (data) => {
+      childProcess.stderr?.on('data', (data) => {
         console.error(`MCP Server ${serverName} stderr:`, data.toString());
       });
 
@@ -295,12 +295,17 @@ export class MCPIntegrationManager {
   async healthCheck(): Promise<Record<string, boolean>> {
     const healthStatus: Record<string, boolean> = {};
     
-    for (const [serverName, server] of this.servers) {
+    for (const [serverName, server] of Array.from(this.servers.entries())) {
       if (server.config.healthCheckUrl) {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
           const response = await fetch(server.config.healthCheckUrl, {
-            timeout: 5000
+            signal: controller.signal
           });
+          
+          clearTimeout(timeoutId);
           healthStatus[serverName] = response.ok;
         } catch {
           healthStatus[serverName] = false;
@@ -389,7 +394,7 @@ export class MCPIntegrationManager {
 
   cleanup(): void {
     // Clear all retry timeouts
-    for (const timeout of this.retryTimeouts.values()) {
+    for (const timeout of Array.from(this.retryTimeouts.values())) {
       clearTimeout(timeout);
     }
     this.retryTimeouts.clear();

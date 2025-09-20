@@ -137,7 +137,7 @@ function ReportSectionRenderer({
               <div>
                 <h3>Key Insights</h3>
                 <ul>
-                  {data.aggregatedInsights.slice(0, 3).map((insight, index) => (
+                  {data.aggregatedInsights.slice(0, 3).map((insight: string, index: number) => (
                     <li key={index}>{insight}</li>
                   ))}
                 </ul>
@@ -147,7 +147,7 @@ function ReportSectionRenderer({
               <div>
                 <h3>Strategic Recommendations</h3>
                 <ul>
-                  {data.aggregatedRecommendations.slice(0, 3).map((rec, index) => (
+                  {data.aggregatedRecommendations.slice(0, 3).map((rec: string, index: number) => (
                     <li key={index}>{rec}</li>
                   ))}
                 </ul>
@@ -159,7 +159,7 @@ function ReportSectionRenderer({
       case 'kpi-cards':
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {data?.kpis?.map((kpi) => (
+            {data?.kpis?.map((kpi: any) => (
               <div key={kpi.id} className="p-4 border rounded-lg bg-card">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-muted-foreground">
@@ -195,7 +195,7 @@ function ReportSectionRenderer({
       case 'charts':
         return (
           <div className="space-y-6">
-            {data?.chartData?.map((chart) => (
+            {data?.chartData?.map((chart: any) => (
               <div key={chart.id} className="p-6 border rounded-lg">
                 <h3 className="text-lg font-semibold mb-2">{chart.title}</h3>
                 {chart.description && (
@@ -221,7 +221,7 @@ function ReportSectionRenderer({
             <h3 className="text-lg font-semibold">Key Insights</h3>
             {data?.aggregatedInsights?.length ? (
               <ul className="space-y-2">
-                {data.aggregatedInsights.map((insight, index) => (
+                {data.aggregatedInsights.map((insight: string, index: number) => (
                   <li key={index} className="flex items-start space-x-2">
                     <span className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></span>
                     <span className="text-sm">{insight}</span>
@@ -240,7 +240,7 @@ function ReportSectionRenderer({
             <h3 className="text-lg font-semibold">Recommendations</h3>
             {data?.aggregatedRecommendations?.length ? (
               <div className="space-y-3">
-                {data.aggregatedRecommendations.map((rec, index) => (
+                {data.aggregatedRecommendations.map((rec: string, index: number) => (
                   <div key={index} className="p-3 bg-muted rounded-lg">
                     <p className="text-sm">{rec}</p>
                   </div>
@@ -266,7 +266,7 @@ function ReportSectionRenderer({
                   </tr>
                 </thead>
                 <tbody>
-                  {data?.kpis?.map((kpi) => (
+                  {data?.kpis?.map((kpi: any) => (
                     <tr key={kpi.id} className="border-t">
                       <td className="p-3 text-sm font-medium">{kpi.label}</td>
                       <td className="p-3 text-sm">{kpi.value} {kpi.unit}</td>

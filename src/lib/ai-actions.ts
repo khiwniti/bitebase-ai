@@ -318,7 +318,7 @@ export class AIActionDispatcher {
 
       // Execute the action with enhanced context
       const enhancedParameters = {
-        ...parameters,
+        ...(typeof parameters === 'object' && parameters !== null ? parameters : {}),
         _sessionId: this.activeSessionId,
         _streamingEnabled: !!streamingOptions?.enableRealTimeUpdates,
         _userId: this.currentUserId,
@@ -352,7 +352,7 @@ export class AIActionDispatcher {
 
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage = error instanceof Error ? (error as Error)?.message || String(error) : 'Unknown error occurred';
 
       // Log error to chat session if available
       if (this.currentChatSessionId) {
@@ -559,7 +559,7 @@ export class AIActionDispatcher {
 
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Backend analysis failed';
+      const errorMessage = error instanceof Error ? (error as Error)?.message || String(error) : 'Backend analysis failed';
 
       if (streamingOptions?.onError) {
         streamingOptions.onError(errorMessage);
@@ -786,7 +786,7 @@ export class AIActionDispatcher {
         ]
       };
     } catch (error) {
-      console.warn('Backend delivery market analysis failed, using fallback:', error.message);
+      console.warn('Backend delivery market analysis failed, using fallback:', (error as Error)?.message || error);
 
       // Update agent execution with error
       try {
@@ -794,14 +794,14 @@ export class AIActionDispatcher {
         const agentExecution = await DatabaseServices.AgentExecution.create({
           agentType: 'delivery-market-analyzer',
           task: `Analyze delivery market: ${params.analysisType} in ${params.region}`,
-          metadata: { parameters: params, error: error.message }
+          metadata: { parameters: params, error: (error as Error)?.message || String(error) }
         });
 
         await DatabaseServices.AgentExecution.updateStatus(
           agentExecution.id,
           'FAILED' as AgentStatus,
           undefined,
-          error.message
+          (error as Error)?.message || String(error)
         );
 
         await DatabaseServices.AgentMetrics.incrementFailure('delivery-market-analyzer', 'market-analysis');
@@ -914,7 +914,7 @@ export class AIActionDispatcher {
         ]
       };
     } catch (error) {
-      console.warn('Backend delivery logistics analysis failed, using fallback:', error.message);
+      console.warn('Backend delivery logistics analysis failed, using fallback:', (error as Error)?.message || String(error));
 
       // Fallback to enhanced mock data
       return {
@@ -1016,7 +1016,7 @@ export class AIActionDispatcher {
         ]
       };
     } catch (error) {
-      console.warn('Backend customer behavior analysis failed, using fallback:', error.message);
+      console.warn('Backend customer behavior analysis failed, using fallback:', (error as Error)?.message || String(error));
 
       // Fallback to enhanced mock data
       return {
@@ -1127,7 +1127,7 @@ export class AIActionDispatcher {
         ]
       };
     } catch (error) {
-      console.warn('Backend property market analysis failed, using fallback:', error.message);
+      console.warn('Backend property market analysis failed, using fallback:', (error as Error)?.message || String(error));
 
       const baseRate = params.region.toLowerCase().includes('bangkok') ? 800 : 600;
       const rate = Math.floor((baseRate + Math.random() * 400) * 1.2);
@@ -1239,7 +1239,7 @@ export class AIActionDispatcher {
         ]
       };
     } catch (error) {
-      console.warn('Backend accommodation density analysis failed, using fallback:', error.message);
+      console.warn('Backend accommodation density analysis failed, using fallback:', (error as Error)?.message || String(error));
 
       // Fallback to enhanced mock data
       return {
@@ -1359,7 +1359,7 @@ export class AIActionDispatcher {
         ]
       };
     } catch (error) {
-      console.warn('Backend tourist flow analysis failed, using fallback:', error.message);
+      console.warn('Backend tourist flow analysis failed, using fallback:', (error as Error)?.message || String(error));
 
       // Fallback to enhanced mock data
       return {

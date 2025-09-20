@@ -12,18 +12,19 @@ const nextConfig = {
             },
         ],
     },
+    // Server external packages (moved from experimental)
+    serverExternalPackages: ['mapbox-gl'],
     experimental: {
-        serverComponentsExternalPackages: ['mapbox-gl'],
-        swcMinify: true,
         esmExternals: true,
         // Development mode optimizations
         optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react'],
-        turbo: {
-            rules: {
-                '*.svg': {
-                    loaders: ['@svgr/webpack'],
-                    as: '*.js',
-                },
+    },
+    // Turbopack configuration (moved from experimental.turbo)
+    turbopack: {
+        rules: {
+            '*.svg': {
+                loaders: ['@svgr/webpack'],
+                as: '*.js',
             },
         },
     },
@@ -32,8 +33,7 @@ const nextConfig = {
     poweredByHeader: false,
     reactStrictMode: true,
     
-    // Additional optimizations for faster loading
-    swcMinify: true,
+    // Remove duplicate swcMinify as it's enabled by default in Next.js 15
     compiler: {
         removeConsole: process.env.NODE_ENV === 'production',
     },

@@ -123,10 +123,10 @@ export default function ReportGeneratePage() {
 
       // Convert chat history to ChatData format
       const chatDataFromReport: ChatData[] = report.chatHistory.map(chat => ({
-        id: chat.id,
-        message: chat.message,
+        id: chat.messageId,
+        message: chat.content,
         timestamp: new Date(chat.timestamp),
-        analysis: chat.analysis
+        analysis: (chat.metadata as any)?.analysis
       }));
       setChatData(chatDataFromReport);
     } else {
@@ -211,19 +211,12 @@ export default function ReportGeneratePage() {
     // Update the report with generation details
     if (report) {
       const updatedReport = {
-        ...report,
         title: reportTitle,
         description: reportDescription,
         status: 'completed' as const,
-        updatedAt: new Date(),
-        // Add generation metadata
-        researchData: {
-          template: selectedTemplate,
-          enabledSections: reportSections.filter(s => s.enabled).map(s => s.id),
-          generatedAt: new Date()
-        }
+        updatedAt: new Date()
       };
-      updateReport(updatedReport);
+      updateReport(reportId, updatedReport);
     }
 
     // Navigate to the generated report
@@ -304,7 +297,7 @@ export default function ReportGeneratePage() {
   return (
     <AppLayout
       title="Generate Report"
-      description="Create a custom market research report from your chat analysis"
+      subtitle="Create a custom market research report from your chat analysis"
       breadcrumbs={breadcrumbs}
       actions={actions}
     >

@@ -6,7 +6,8 @@ import dynamic from 'next/dynamic';
 import { useReports } from '@/contexts/ReportsContext';
 import { SharedStateProvider } from '@/components/shared/SharedStateProvider';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, FileText, History } from 'lucide-react';
+import { ArrowLeft, FileText, History, Plus, MessageSquare } from 'lucide-react';
+import { AppLayout } from '@/components/ui/app-layout';
 
 const ChatInterface = dynamic(() => import('@/components/chat/ChatInterface'), { 
   ssr: false,
@@ -38,7 +39,7 @@ export default function ChatPage() {
         `Research Report ${new Date().toLocaleDateString()}`,
         'New research analysis session'
       );
-      router.replace(`/chat?reportId=${newReport.id}`);
+      router.replace(`/chat?reportId=${newReport.reportId}`);
       return;
     }
     
@@ -50,7 +51,7 @@ export default function ChatPage() {
       `Research Report ${new Date().toLocaleDateString()}`,
       'New research analysis session'
     );
-    router.push(`/chat?reportId=${newReport.id}`);
+    router.push(`/chat?reportId=${newReport.reportId}`);
   };
 
   if (isLoading) {
@@ -104,7 +105,7 @@ export default function ChatPage() {
         <div className="flex items-center space-x-3">
           <Button 
             variant="outline"
-            onClick={() => router.push(`/reports/${currentReport.id}`)}
+            onClick={() => router.push(`/reports/${currentReport.reportId}`)}
             className="flex items-center space-x-2"
           >
             <FileText className="h-4 w-4" />
@@ -123,7 +124,7 @@ export default function ChatPage() {
     >
       <div className="h-full -m-6">
         <SharedStateProvider>
-          <ChatInterface reportId={currentReport.id} />
+          <ChatInterface reportId={currentReport.reportId} />
         </SharedStateProvider>
       </div>
     </AppLayout>

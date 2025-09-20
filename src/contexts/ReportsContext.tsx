@@ -210,19 +210,40 @@ export const ReportsProvider: React.FC<ReportsProviderProps> = ({ children }) =>
   };
 
   const updateAgentStatus = (reportId: string, agentId: string, status: Partial<AgentStatus>) => {
+    const currentAgentStatus = currentReport?.agentStatuses?.[agentId];
+    const updatedStatus: AgentStatus = {
+      agentId,
+      agentName: status.agentName || currentAgentStatus?.agentName || 'Unknown Agent',
+      status: status.status || currentAgentStatus?.status || 'idle',
+      currentTask: status.currentTask || currentAgentStatus?.currentTask || '',
+      progressPercentage: status.progressPercentage ?? currentAgentStatus?.progressPercentage ?? 0,
+      substeps: status.substeps || currentAgentStatus?.substeps || [],
+      estimatedCompletion: status.estimatedCompletion || currentAgentStatus?.estimatedCompletion,
+      dataProcessed: status.dataProcessed ?? currentAgentStatus?.dataProcessed ?? 0,
+      processingRate: status.processingRate ?? currentAgentStatus?.processingRate ?? 0,
+      errors: status.errors || currentAgentStatus?.errors || [],
+      lastUpdate: new Date(),
+      userInteractionsPending: status.userInteractionsPending || currentAgentStatus?.userInteractionsPending || []
+    };
+    
     const update = {
       agentStatuses: {
         ...currentReport?.agentStatuses,
-        [agentId]: { ...currentReport?.agentStatuses[agentId], ...status }
+        [agentId]: updatedStatus
       }
     };
     updateReport(reportId, update);
   };
 
   const updateAnalysisProgress = (reportId: string, analysisType: keyof Report['analysisProgress'], progress: number) => {
+    const currentProgress = currentReport?.analysisProgress;
     const update = {
       analysisProgress: {
-        ...currentReport?.analysisProgress,
+        product: currentProgress?.product ?? 0,
+        place: currentProgress?.place ?? 0,
+        price: currentProgress?.price ?? 0,
+        promotion: currentProgress?.promotion ?? 0,
+        ...currentProgress,
         [analysisType]: progress
       }
     };

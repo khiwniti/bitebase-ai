@@ -34,9 +34,9 @@ export default function ResearchPage() {
   const handleNavigateToChat = (message?: string) => {
     if (currentReport) {
       if (message) {
-        router.push(`/chat?reportId=${currentReport.id}&message=${encodeURIComponent(message)}`);
+        router.push(`/chat?reportId=${currentReport.reportId}&message=${encodeURIComponent(message)}`);
       } else {
-        router.push(`/chat?reportId=${currentReport.id}`);
+        router.push(`/chat?reportId=${currentReport.reportId}`);
       }
     } else {
       router.push('/chat');

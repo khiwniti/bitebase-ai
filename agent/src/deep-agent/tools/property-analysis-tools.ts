@@ -9,6 +9,16 @@
 import { z } from "zod";
 import { tool } from "@langchain/core/tools";
 
+// Helper function for calculateFinancialProjections
+function calculateFinancialProjections(investmentData: any, horizon?: string): any {
+  return {
+    expectedROI: Math.random() * 0.15 + 0.08,
+    cashFlow: Math.floor(Math.random() * 100000) + 50000,
+    netPresentValue: Math.floor(Math.random() * 500000) + 200000,
+    paybackPeriod: Math.floor(Math.random() * 5) + 3
+  };
+}
+
 /**
  * Property Market Analysis Tool
  * Analyzes rental rates, property values, and market conditions for restaurant locations
@@ -499,7 +509,7 @@ function getPropertyTypeMultiplier(propertyType: string): number {
     'mixed_use': 0.95,
     'restaurant_space': 1.15
   };
-  return multipliers[propertyType] || 1.0;
+  return (multipliers as any)[propertyType] || 1.0;
 }
 
 function generateRentalRate(propertyType: string, region: string, sizeRange?: string, baseMultiplier: number = 1.0): string {
@@ -534,7 +544,7 @@ function calculateBaseRate(propertyType: string, region: string): number {
     'mixed_use': region.toLowerCase().includes('bangkok') ? 800 : 550,
     'restaurant_space': region.toLowerCase().includes('bangkok') ? 1000 : 700
   };
-  return baseRates[propertyType] || 750;
+  return (baseRates as any)[propertyType] || 750;
 }
 
 function calculateLocationPremium(location: string, region: string): number {
@@ -584,7 +594,7 @@ function calculateInitialInvestment(investmentType: string, propertyDetails: any
     'partnership': 2000000   // 2M THB contribution
   };
 
-  const base = baseAmounts[investmentType] || 1000000;
+  const base = (baseAmounts as any)[investmentType] || 1000000;
   const variation = Math.random() * 0.4 + 0.8; // ±20% variation
   return `${Math.floor(base * variation).toLocaleString()} THB`;
 }
@@ -603,7 +613,7 @@ function calculateBreakEvenPoint(investmentType: string, propertyDetails: any): 
     'lease_to_own': '18-24 months',
     'partnership': '15-20 months'
   };
-  return timelines[investmentType] || '18-24 months';
+  return (timelines as any)[investmentType] || '18-24 months';
 }
 
 function generateCashFlowProjection(investmentHorizon: string): any {
@@ -613,11 +623,11 @@ function generateCashFlowProjection(investmentHorizon: string): any {
     'long_term': 5
   };
 
-  const years = horizonMultiplier[investmentHorizon] || 3;
+  const years = (horizonMultiplier as any)[investmentHorizon] || 3;
   const projection = {};
 
   for (let i = 1; i <= years; i++) {
-    projection[`year${i}`] = {
+    (projection as any)[`year${i}`] = {
       revenue: `${Math.floor((Math.random() * 2000000 + 3000000) * Math.pow(1.1, i-1)).toLocaleString()} THB`,
       netIncome: `${Math.floor((Math.random() * 400000 + 600000) * Math.pow(1.15, i-1)).toLocaleString()} THB`,
       cashFlow: i === 1 ? 'Break-even to positive' : 'Positive'
@@ -635,7 +645,7 @@ function assessFinancialRisk(investmentType: string, riskTolerance?: string): st
     'partnership': 'Medium - shared risk and control'
   };
 
-  const baseRisk = riskLevels[investmentType] || 'Medium';
+  const baseRisk = (riskLevels as any)[investmentType] || 'Medium';
 
   if (riskTolerance === 'low') {
     return baseRisk + ' (conservative approach recommended)';

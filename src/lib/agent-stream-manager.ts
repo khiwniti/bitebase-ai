@@ -43,9 +43,9 @@ export class AgentStreamManager {
   }
 
   broadcastToAll(data: StreamEventData) {
-    for (const sessionId of this.controllers.keys()) {
+    Array.from(this.controllers.keys()).forEach(sessionId => {
       this.broadcast(sessionId, data);
-    }
+    });
   }
 
   setSessionData(sessionId: string, key: string, value: any) {
