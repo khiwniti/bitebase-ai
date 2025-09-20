@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
+// Enhanced Prisma schema for BiteBase AI SaaS
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
@@ -14,21 +11,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User and session management
+// Enhanced User and session management
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  name        String?
-  avatar      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String           @id @default(cuid())
+  email            String           @unique
+  name             String?
+  avatar           String?
+  role             UserRole         @default(USER)
+  subscription     SubscriptionTier @default(FREE)
+  onboardingComplete Boolean        @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  lastActiveAt     DateTime         @default(now())
 
   // Relations
-  sessions    Session[]
-  reports     MarketReport[]
-  chatSessions ChatSession[]
+  sessions         Session[]
+  reports          MarketReport[]
+  chatSessions     ChatSession[]
+  collaborations   ReportCollaboration[]
+  apiKeys          ApiKey[]
+  usage            UsageRecord[]
 
   @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  ENTERPRISE
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  ENTERPRISE
 }
 
 model Session {
@@ -45,31 +61,104 @@ model Session {
   @@map("sessions")
 }
 
-// Market research and reports
+// Enhanced Market research and reports
 model MarketReport {
-  id             String           @id @default(cuid())
-  title          String
-  description    String?
-  region         String
-  analysisType   AnalysisType
-  status         ReportStatus     @default(PENDING)
-  data           Json?
-  insights       String[]
-  recommendations String[]
-  metadata       Json?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  userId         String
+  id                String           @id @default(cuid())
+  title             String
+  description       String?
+  region            String
+  analysisType      AnalysisType
+  status            ReportStatus     @default(PENDING)
+  progress          Int              @default(0)
+  
+  // Enhanced Restaurant Parameters
+  restaurantType    String?
+  cuisineType       String?
+  location          String?
+  district          String?
+  city              String           @default("Bangkok")
+  budgetMin         Int?
+  budgetMax         Int?
+  targetCustomers   String[]
+  businessModel     BusinessModel?
+  
+  // Analysis Results
+  data              Json?
+  productAnalysis   Json?
+  placeAnalysis     Json?
+  priceAnalysis     Json?
+  promotionAnalysis Json?
+  
+  // Report Content
+  insights          String[]
+  recommendations   String[]
+  executiveSummary  String?
+  keyFindings       String[]
+  riskAssessment    String[]
+  nextSteps         String[]
+  confidence        Int              @default(0)
+  dataSources       String[]
+  
+  metadata          Json?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  publishedAt       DateTime?
+  userId            String
 
   // Relations
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deliveryMarket DeliveryMarketAnalysis[]
-  customerBehavior CustomerBehaviorAnalysis[]
-  propertyMarket PropertyMarketAnalysis[]
-  accommodationDensity AccommodationDensityAnalysis[]
-  touristFlow    TouristFlowAnalysis[]
+  user                     User                            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryMarket           DeliveryMarketAnalysis[]
+  customerBehavior         CustomerBehaviorAnalysis[]
+  propertyMarket           PropertyMarketAnalysis[]
+  accommodationDensity     AccommodationDensityAnalysis[]
+  touristFlow              TouristFlowAnalysis[]
+  collaborations           ReportCollaboration[]
+  analysisSessions         AnalysisSession[]
+  mapData                  MapData[]
 
   @@map("market_reports")
+}
+
+enum BusinessModel {
+  DINE_IN
+  DELIVERY
+  TAKEAWAY
+  HYBRID
+}
+
+// Analysis Sessions for tracking LangGraph workflows
+model AnalysisSession {
+  id                String           @id @default(cuid())
+  sessionId         String           @unique
+  workflowId        String?
+  status            SessionStatus    @default(PENDING)
+  currentNode       String?
+  overallProgress   Int              @default(0)
+  
+  // Agent Progress
+  agentProgress     Json             @default("{}")
+  mcpServerStatus   Json             @default("{}")
+  errors            Json             @default("[]")
+  
+  // Timing
+  startedAt         DateTime         @default(now())
+  completedAt       DateTime?
+  estimatedDuration Int?             // in minutes
+  
+  // Relationships
+  reportId          String
+  report            MarketReport     @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  @@map("analysis_sessions")
+}
+
+enum SessionStatus {
+  PENDING
+  RUNNING
+  PAUSED
+  COMPLETED
+  FAILED
+  CANCELLED
 }
 
 model DeliveryMarketAnalysis {
@@ -167,12 +256,13 @@ model TouristFlowAnalysis {
   @@map("tourist_flow_analysis")
 }
 
-// Chat and conversation management
+// Enhanced Chat and conversation management
 model ChatSession {
   id        String      @id @default(cuid())
   userId    String
   title     String?
   sessionId String      @unique
+  reportId  String?     // Link to report if chat is part of analysis
   metadata  Json?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
@@ -189,6 +279,7 @@ model ChatMessage {
   sessionId     String
   role          MessageRole
   content       String
+  messageType   MessageType @default(TEXT)
   metadata      Json?
   toolCalls     Json?
   attachments   Json?
@@ -198,6 +289,108 @@ model ChatMessage {
   session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@map("chat_messages")
+}
+
+enum MessageType {
+  TEXT
+  SYSTEM
+  ERROR
+  COMPONENT
+  CHART
+  MAP
+}
+
+// Map and Geospatial Data
+model MapData {
+  id              String      @id @default(cuid())
+  type            MapDataType
+  title           String
+  description     String?
+  coordinates     Json        // GeoJSON
+  properties      Json        @default("{}")
+  style           Json        @default("{}")
+  isVisible       Boolean     @default(true)
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relationships
+  reportId        String
+  report          MarketReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  @@map("map_data")
+}
+
+enum MapDataType {
+  RESTAURANT
+  COMPETITOR
+  PROPERTY
+  HEATMAP
+  BOUNDARY
+  ROUTE
+}
+
+// Collaboration
+model ReportCollaboration {
+  id              String              @id @default(cuid())
+  role            CollaborationRole   @default(VIEWER)
+  permissions     String[]
+  invitedAt       DateTime            @default(now())
+  acceptedAt      DateTime?
+  
+  // Relationships
+  reportId        String
+  report          MarketReport        @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([reportId, userId])
+  @@map("report_collaborations")
+}
+
+enum CollaborationRole {
+  VIEWER
+  EDITOR
+  ADMIN
+}
+
+// API Keys and Usage
+model ApiKey {
+  id              String      @id @default(cuid())
+  name            String
+  key             String      @unique
+  isActive        Boolean     @default(true)
+  lastUsedAt      DateTime?
+  createdAt       DateTime    @default(now())
+  expiresAt       DateTime?
+  
+  // Relationships
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("api_keys")
+}
+
+model UsageRecord {
+  id              String      @id @default(cuid())
+  type            UsageType
+  count           Int         @default(1)
+  metadata        Json?
+  timestamp       DateTime    @default(now())
+  
+  // Relationships
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("usage_records")
+}
+
+enum UsageType {
+  REPORT_CREATED
+  ANALYSIS_STARTED
+  API_CALL
+  EXPORT_GENERATED
+  COLLABORATION_INVITED
 }
 
 // Deep agent system tracking
