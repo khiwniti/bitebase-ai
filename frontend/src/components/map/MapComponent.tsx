@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,11 +21,18 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useSharedState } from "../shared/SharedStateProvider";
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-
-// Set Mapbox access token
-mapboxgl.accessToken = 'pk.eyJ1Ijoia2hpd25pdGkiLCJhIjoiY205eDFwMzl0MHY1YzJscjB3bm4xcnh5ZyJ9.ANGVE0tiA9NslBn8ft_9fQ';
+// Dynamic import for mapbox-gl to avoid SSR issues
+const loadMapbox = async () => {
+  if (typeof window === 'undefined') return null;
+  
+  const mapboxgl = await import('mapbox-gl');
+  await import('mapbox-gl/dist/mapbox-gl.css');
+  
+  // Set Mapbox access token
+  mapboxgl.default.accessToken = 'pk.eyJ1Ijoia2hpd25pdGkiLCJhIjoiY205eDFwMzl0MHY1YzJscjB3bm4xcnh5ZyJ9.ANGVE0tiA9NslBn8ft_9fQ';
+  
+  return mapboxgl.default;
+};
 
 type MarkerType = "location" | "poi" | "business" | "route" | "custom";
 

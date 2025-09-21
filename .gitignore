@@ -54,3 +54,8 @@ node_modules/
 *.log
 
 /src/generated/prisma
+# Build artifacts
+frontend/.next/
+frontend/out/
+frontend/build/
+*.log

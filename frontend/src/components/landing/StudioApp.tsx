@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import LandingPage from "./LandingPage";
 import ResearchWorkflow from "./ResearchWorkflow";
 import ChatInterface from "../chat/ChatInterface";
-import MapComponent from "../map/MapComponent";
+import LazyMapComponent from "../map/LazyMapComponent";
 
 type ViewType = "landing" | "research" | "chat";
 
@@ -86,7 +86,7 @@ const StudioApp: React.FC = () => {
               <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4 min-h-0 overflow-hidden p-4">
                 {/* Map Component - Takes up 2/3 of the space */}
                 <div className="lg:col-span-2 min-h-0 overflow-hidden">
-                  <MapComponent />
+                  <LazyMapComponent />
                 </div>
                 
                 {/* Chat Interface - Takes up 1/3 of the space */}

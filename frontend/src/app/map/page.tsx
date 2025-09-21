@@ -6,7 +6,6 @@
 
 import { useState, useEffect } from 'react';
 import { useReports } from '@/contexts/ReportsContext';
-import { SharedStateProvider } from '@/components/shared/SharedStateProvider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -63,8 +62,7 @@ export default function MapCanvasPage() {
   };
 
   return (
-    <SharedStateProvider>
-      <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50">
         {/* Enhanced Sidebar */}
         <div className={`${isSidebarOpen ? 'w-64' : 'w-16'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col`}>
           {/* Sidebar Header */}
@@ -316,6 +314,5 @@ export default function MapCanvasPage() {
           </div>
         </div>
       </div>
-    </SharedStateProvider>
   );
 }
