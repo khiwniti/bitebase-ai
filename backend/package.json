@@ -49,5 +49,14 @@
     "typescript": "^5.9.2",
     "uuid": "^13.0.0",
     "winston": "^3.17.0"
+  },
+  "mcpServers": {
+    "@executeautomation/playwright-mcp-server": "latest",
+    "sqlite-mcp-server": "latest",
+    "hustcc/mcp-echarts": "latest",
+    "hustcc/mcp-mermaid": "latest",
+    "VoxLink-org/finance-tools-mcp": "latest",
+    "financial-datasets/mcp-server": "latest",
+    "gvaibhav-tam-mcp-server": "latest"
   }
 }

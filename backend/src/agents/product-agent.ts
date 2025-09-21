@@ -3,15 +3,20 @@
 
 import { BaseAgent } from './base-agent';
 import { BiteBaseState, NodeResponse, ProductAnalysisResult } from '../langgraph/state';
+import { WebScrapingService, WongnaiScrapingResult, FoodPandaScrapingResult } from '../services/web-scraping-service.js';
+import { MCPServerManager } from '../services/mcp-server-manager.js';
 
 export class ProductAgent extends BaseAgent {
-  constructor() {
+  private webScrapingService: WebScrapingService;
+
+  constructor(mcpManager: MCPServerManager) {
     super(
       'Product Analysis Agent',
       'Analyzes menu items, dish popularity, and profitability using Wongnai and Food Panda data',
       ['playwright-mcp', 'sqlite-mcp'],
       3
     );
+    this.webScrapingService = new WebScrapingService(mcpManager);
   }
 
   async execute(state: BiteBaseState): Promise<NodeResponse> {
@@ -80,111 +85,169 @@ export class ProductAgent extends BaseAgent {
     };
   }
 
-  private async scrapeWongnaiData(parameters: any): Promise<any> {
+  private async scrapeWongnaiData(parameters: any): Promise<WongnaiScrapingResult> {
     console.log('🔍 Scraping Wongnai for dish and restaurant data...');
     
-    const scrapeParams = {
+    const scrapeOptions = {
       location: parameters.location?.address || 'Bangkok',
-      cuisine: parameters.cuisine || ['Thai'],
+      cuisine: parameters.cuisine?.[0] || undefined,
+      priceRange: parameters.budgetRange || undefined,
       radius: parameters.location?.radius || 5,
-      filters: {
-        rating: '>= 4.0',
-        reviews: '>= 10'
-      }
+      maxPages: 5
     };
     
-    // Use Playwright MCP server for web scraping
-    const wongnaiResponse = await this.callMCPServer('playwright-mcp', 'scrape', {
-      url: 'https://www.wongnai.com',
-      selectors: {
-        restaurants: '.restaurant-card',
-        dishes: '.menu-item',
-        ratings: '.rating-score',
-        reviews: '.review-text'
-      },
-      ...scrapeParams
-    });
-    
-    return {
-      restaurants: wongnaiResponse.data || [],
-      totalRestaurants: wongnaiResponse.data?.length || 0,
-      averageRating: 4.2,
-      popularDishes: ['Pad Thai', 'Green Curry', 'Tom Yum Soup', 'Mango Sticky Rice'],
-      priceRanges: {
-        'Street Food': { min: 30, max: 80 },
-        'Casual Dining': { min: 120, max: 300 },
-        'Fine Dining': { min: 500, max: 1200 }
-      }
-    };
+    return await this.webScrapingService.scrapeWongnai(scrapeOptions);
   }
 
-  private async scrapeFoodPandaData(parameters: any): Promise<any> {
+  private async scrapeFoodPandaData(parameters: any): Promise<FoodPandaScrapingResult> {
     console.log('🛵 Scraping Food Panda for delivery menu data...');
     
-    const scrapeParams = {
+    const scrapeOptions = {
       location: parameters.location?.address || 'Bangkok',
-      cuisine: parameters.cuisine || ['Thai'],
-      deliveryArea: parameters.location?.radius || 5
+      cuisine: parameters.cuisine?.[0] || undefined,
+      deliveryArea: parameters.location?.radius || 5,
+      maxPages: 3
     };
     
-    // Use Playwright MCP server for Food Panda scraping
-    const foodPandaResponse = await this.callMCPServer('playwright-mcp', 'scrape', {
-      url: 'https://www.foodpanda.co.th',
-      selectors: {
-        restaurants: '.restaurant-list-item',
-        menus: '.dish-card',
-        prices: '.price',
-        deliveryTimes: '.delivery-time'
-      },
-      ...scrapeParams
-    });
-    
-    return {
-      deliveryRestaurants: foodPandaResponse.data || [],
-      averageDeliveryTime: 35,
-      deliveryFees: { min: 15, max: 49 },
-      popularDeliveryItems: ['Fried Rice', 'Pad Thai', 'Green Curry', 'Spring Rolls'],
-      deliveryPricing: {
-        markup: 0.15, // 15% average markup for delivery
-        minimumOrder: 100
-      }
-    };
+    return await this.webScrapingService.scrapeFoodPanda(scrapeOptions);
   }
 
-  private async analyzeDishPerformance(wongnaiData: any, foodPandaData: any): Promise<any> {
+  private async analyzeDishPerformance(wongnaiData: WongnaiScrapingResult, foodPandaData: FoodPandaScrapingResult): Promise<any> {
     console.log('📈 Analyzing dish performance metrics...');
     
-    // Combine data from both platforms
-    const allDishes = [
-      ...wongnaiData.popularDishes,
-      ...foodPandaData.popularDeliveryItems
-    ];
+    // Extract all dishes from both platforms
+    const wongnaiDishes = wongnaiData.restaurants.flatMap(restaurant => 
+      restaurant.dishes.map(dish => ({
+        ...dish,
+        source: 'wongnai',
+        restaurant: restaurant.name,
+        location: restaurant.location
+      }))
+    );
     
-    // Calculate performance metrics
-    const dishPerformance = allDishes.map(dish => ({
-      name: dish,
-      popularity: Math.random() * 100, // Mock popularity score
-      profitability: Math.random() * 100, // Mock profitability score
-      seasonality: this.getSeasonality(dish),
-      orderFrequency: Math.floor(Math.random() * 50) + 10,
-      avgRating: 4.0 + Math.random() * 1.0
-    }));
+    const foodPandaDishes = foodPandaData.restaurants.flatMap(restaurant =>
+      restaurant.menu.flatMap(category =>
+        category.items.map(item => ({
+          name: item.name,
+          price: item.price,
+          rating: restaurant.rating,
+          reviewCount: 0, // Food Panda doesn't show dish-specific reviews
+          source: 'foodpanda',
+          restaurant: restaurant.name,
+          category: category.category
+        }))
+      )
+    );
     
-    // Sort by combined score
+    // Combine and analyze dish performance
+    const allDishes = [...wongnaiDishes, ...foodPandaDishes];
+    const dishMap = new Map<string, any[]>();
+    
+    // Group dishes by name for analysis
+    allDishes.forEach(dish => {
+      const key = dish.name.toLowerCase().trim();
+      if (!dishMap.has(key)) {
+        dishMap.set(key, []);
+      }
+      dishMap.get(key)!.push(dish);
+    });
+    
+    // Calculate performance metrics for each dish
+    const dishPerformance = Array.from(dishMap.entries()).map(([dishName, instances]) => {
+      const avgPrice = instances.reduce((sum, inst) => sum + inst.price, 0) / instances.length;
+      const avgRating = instances
+        .filter(inst => inst.rating > 0)
+        .reduce((sum, inst, _, arr) => sum + inst.rating / arr.length, 0);
+      const totalReviews = instances.reduce((sum, inst) => sum + (inst.reviewCount || 0), 0);
+      const popularity = this.calculatePopularityScore(instances, totalReviews, avgRating);
+      
+      return {
+        name: dishName,
+        avgPrice,
+        avgRating,
+        totalReviews,
+        popularity,
+        profitability: this.calculateProfitability(avgPrice, avgRating),
+        seasonality: this.getSeasonality(dishName),
+        orderFrequency: instances.length, // Number of restaurants serving this dish
+        restaurants: instances.map(inst => inst.restaurant),
+        sources: Array.from(new Set(instances.map(inst => inst.source)))
+      };
+    });
+    
+    // Sort by combined performance score
     const topPerformers = dishPerformance
       .sort((a, b) => (b.popularity + b.profitability) - (a.popularity + a.profitability))
-      .slice(0, 10);
+      .slice(0, 15);
+    
+    // Identify market trends
+    const trends = this.identifyMarketTrends(dishPerformance, wongnaiData, foodPandaData);
     
     return {
       topPerformers,
       detailedAnalysis: dishPerformance,
-      trends: [
-        'Healthy options gaining popularity',
-        'Fusion cuisines trending upward',
-        'Spicy dishes high demand',
-        'Vegetarian options increasing'
-      ]
+      trends,
+      platformComparison: {
+        wongnai: {
+          totalRestaurants: wongnaiData.restaurants.length,
+          avgRating: wongnaiData.restaurants.reduce((sum, r) => sum + r.rating, 0) / wongnaiData.restaurants.length
+        },
+        foodpanda: {
+          totalRestaurants: foodPandaData.restaurants.length,
+          avgDeliveryTime: foodPandaData.restaurants.reduce((sum, r) => sum + parseInt(r.deliveryTime), 0) / foodPandaData.restaurants.length
+        }
+      }
     };
+  }
+  
+  private calculatePopularityScore(instances: any[], totalReviews: number, avgRating: number): number {
+    // Factor in number of restaurants serving the dish, reviews, and rating
+    const restaurantFactor = Math.min(instances.length / 10, 1) * 40; // Max 40 points
+    const reviewFactor = Math.min(totalReviews / 100, 1) * 30; // Max 30 points  
+    const ratingFactor = (avgRating / 5) * 30; // Max 30 points
+    
+    return restaurantFactor + reviewFactor + ratingFactor;
+  }
+  
+  private calculateProfitability(avgPrice: number, avgRating: number): number {
+    // Simple profitability model based on price point and customer satisfaction
+    const priceScore = Math.min(avgPrice / 200, 1) * 50; // Normalized to max 50 points
+    const satisfactionMultiplier = avgRating / 5;
+    
+    return priceScore * satisfactionMultiplier;
+  }
+  
+  private identifyMarketTrends(dishPerformance: any[], wongnaiData: WongnaiScrapingResult, foodPandaData: FoodPandaScrapingResult): string[] {
+    const trends: string[] = [];
+    
+    // Analyze high-performing dishes for patterns
+    const topDishes = dishPerformance.slice(0, 10);
+    const cuisineTypes = wongnaiData.restaurants.map(r => r.cuisine);
+    
+    // Trend detection logic
+    if (topDishes.some(d => d.name.toLowerCase().includes('healthy') || d.name.toLowerCase().includes('salad'))) {
+      trends.push('Healthy options gaining popularity');
+    }
+    
+    if (topDishes.some(d => d.name.toLowerCase().includes('fusion') || d.name.toLowerCase().includes('korean') || d.name.toLowerCase().includes('japanese'))) {
+      trends.push('Fusion and international cuisines trending upward');
+    }
+    
+    if (topDishes.some(d => d.name.toLowerCase().includes('spicy') || d.name.toLowerCase().includes('tom yum'))) {
+      trends.push('Spicy dishes maintain high demand');
+    }
+    
+    if (topDishes.some(d => d.name.toLowerCase().includes('vegetarian') || d.name.toLowerCase().includes('vegan'))) {
+      trends.push('Plant-based options increasingly popular');
+    }
+    
+    // Check delivery vs dine-in preferences
+    const deliveryOnlyDishes = topDishes.filter(d => d.sources.includes('foodpanda') && !d.sources.includes('wongnai'));
+    if (deliveryOnlyDishes.length > 3) {
+      trends.push('Delivery-optimized menu items show strong performance');
+    }
+    
+    return trends;
   }
 
   private async generateMenuOptimization(dishAnalysis: any): Promise<any> {
