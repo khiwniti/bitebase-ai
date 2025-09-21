@@ -2,6 +2,8 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import { WorkflowCoordinator } from './langgraph/workflow-coordinator';
+import { BiteBaseState } from './langgraph/state';
 
 const app = express();
 const httpServer = createServer(app);
@@ -51,8 +53,8 @@ io.on('connection', (socket) => {
     });
 
     try {
-      // Start analysis workflow (non-blocking)
-      setImmediate(() => simulateAnalysisWorkflow(sessionId, parameters, socket));
+      // Start LangGraph analysis workflow (non-blocking)
+      setImmediate(() => executeAnalysisWorkflow(sessionId, parameters, socket));
     } catch (error) {
       console.error('❌ Analysis failed:', error);
       socket.emit('analysis-error', {
@@ -100,109 +102,92 @@ io.on('connection', (socket) => {
   });
 });
 
-// Fixed analysis workflow - non-blocking
-async function simulateAnalysisWorkflow(sessionId: string, parameters: any, socket: any) {
+// LangGraph analysis workflow - non-blocking
+async function executeAnalysisWorkflow(sessionId: string, parameters: any, socket: any) {
   const session = activeSessions.get(sessionId);
   if (!session) return;
 
-  const agents = [
-    { name: 'product', label: 'Product Analysis', duration: 5000 },
-    { name: 'place', label: 'Place Analysis', duration: 4000 },
-    { name: 'price', label: 'Price Analysis', duration: 3000 },
-    { name: 'promotion', label: 'Promotion Analysis', duration: 4000 },
-    { name: 'report', label: 'Report Generation', duration: 2000 }
-  ];
+  try {
+    // Initialize the workflow coordinator
+    const coordinator = new WorkflowCoordinator();
+    
+    // Create initial state from parameters
+    const initialState: BiteBaseState = {
+      restaurantParams: parameters,
+      status: 'initializing',
+      progress: 0,
+      currentAgent: 'supervisor'
+    };
 
-  session.status = 'running';
-  
-  for (let i = 0; i < agents.length; i++) {
-    const agent = agents[i];
-    const baseProgress = (i / agents.length) * 100;
-    
-    // Check if session still exists and is not stopped
-    const currentSession = activeSessions.get(sessionId);
-    if (!currentSession) return;
-    
-    currentSession.currentAgent = agent.name;
-    
-    // Emit start of agent
-    socket.emit('agent-started', {
-      sessionId,
-      agent: agent.name,
-      label: agent.label,
-      progress: baseProgress
-    });
+    // Set up progress callback
+    const progressCallback = (agentName: string, message: string, progress: number) => {
+      const currentSession = activeSessions.get(sessionId);
+      if (!currentSession) return;
 
-    // Simulate progressive work with non-blocking approach
-    const steps = 10;
-    const stepDuration = agent.duration / steps;
-    
-    for (let step = 0; step <= steps; step++) {
-      // Non-blocking pause check
-      const session = activeSessions.get(sessionId);
-      if (!session) return; // Session was stopped
-      
-      if (session.status === 'paused') {
-        // Schedule retry instead of blocking
-        setTimeout(() => {
-          simulateAnalysisWorkflow(sessionId, parameters, socket);
-        }, 1000);
-        return;
-      }
+      currentSession.currentAgent = agentName;
+      currentSession.progress = progress;
 
-      const agentProgress = (step / steps) * 100;
-      const overallProgress = baseProgress + (agentProgress / agents.length);
-      
-      session.progress = overallProgress;
-      
       socket.emit('agent-progress', {
         sessionId,
-        agent: agent.name,
-        agentProgress,
-        overallProgress,
-        message: `Processing ${agent.label}... ${Math.round(agentProgress)}%`
+        agent: agentName,
+        agentProgress: progress,
+        overallProgress: progress,
+        message
       });
 
-      // Non-blocking delay
-      if (step < steps) {
-        await new Promise(resolve => setTimeout(resolve, stepDuration));
-      }
+      console.log(`📊 ${agentName}: ${message} (${progress}%)`);
+    };
+
+    session.status = 'running';
+    
+    // Execute the LangGraph workflow
+    console.log(`🤖 Starting LangGraph workflow for session: ${sessionId}`);
+    
+    const result = await coordinator.executeWorkflow(initialState, progressCallback);
+    
+    // Check if session still exists
+    const finalSession = activeSessions.get(sessionId);
+    if (!finalSession) return;
+
+    if (result.status === 'completed') {
+      finalSession.status = 'completed';
+      finalSession.progress = 100;
+      finalSession.data = result;
+      
+      socket.emit('analysis-completed', {
+        sessionId,
+        data: {
+          summary: result.reportResult?.executiveSummary || 'Analysis completed successfully',
+          recommendations: result.reportResult?.recommendations || [],
+          productResult: result.productResult,
+          placeResult: result.placeResult,
+          priceResult: result.priceResult,
+          promotionResult: result.promotionResult,
+          reportResult: result.reportResult
+        }
+      });
+
+      console.log(`✅ LangGraph workflow completed for session: ${sessionId}`);
+    } else {
+      throw new Error(result.error || 'Workflow execution failed');
     }
 
-    // Agent completed
-    socket.emit('agent-completed', {
-      sessionId,
-      agent: agent.name,
-      progress: ((i + 1) / agents.length) * 100,
-      data: generateMockData(agent.name, parameters)
-    });
-
-    console.log(`✅ ${agent.label} completed for session: ${sessionId}`);
-  }
-
-  // Mark analysis as completed
-  const finalSession = activeSessions.get(sessionId);
-  if (finalSession) {
-    finalSession.status = 'completed';
-    finalSession.progress = 100;
+  } catch (error) {
+    console.error(`❌ LangGraph workflow failed for session ${sessionId}:`, error);
     
-    socket.emit('analysis-completed', {
-      sessionId,
-      data: {
-        summary: 'Market research analysis completed successfully',
-        recommendations: [
-          'Consider targeting mid-price segment',
-          'Focus on delivery-friendly menu items',
-          'Optimize for peak hours (11:30-13:30, 18:00-20:00)'
-        ]
-      }
-    });
-
-    console.log(`🎉 Analysis completed for session: ${sessionId}`);
+    const errorSession = activeSessions.get(sessionId);
+    if (errorSession) {
+      errorSession.status = 'error';
+      
+      socket.emit('analysis-error', {
+        sessionId,
+        error: error instanceof Error ? error.message : 'Workflow execution failed'
+      });
+    }
   }
 }
 
-// Generate mock data for each agent
+// Generate mock data for each agent (keeping for backward compatibility)
 function generateMockData(agentType: string, parameters: any) {
   const mockData: any = {
     product: {
