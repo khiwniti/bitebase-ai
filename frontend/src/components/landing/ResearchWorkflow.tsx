@@ -109,7 +109,7 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onNavigateBack()}
+                onClick={onNavigateBack}
                 className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -129,7 +129,7 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => onNavigateToChat()}
+                onClick={onNavigateToChat}
                 className="border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 Switch to Chat
@@ -207,7 +207,7 @@ const ResearchWorkflow: React.FC<ResearchWorkflowProps> = ({
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-orange-300 hover:bg-orange-50"
-                  onClick={() => onNavigateToChat()}
+                  onClick={onNavigateToChat}
                 >
                   <Target className="w-4 h-4 mr-2" />
                   Ask AI Assistant

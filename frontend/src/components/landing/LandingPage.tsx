@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +18,6 @@ import {
   Building2,
   Coffee,
   Utensils,
-  FileText,
 } from "lucide-react";
 
 interface LandingPageProps {
@@ -31,7 +29,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
   onNavigateToResearch,
   onNavigateToChat,
 }) => {
-  const router = useRouter();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   const workspaceTemplates = [
@@ -116,15 +113,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => router.push('/reports')}
-                className="flex items-center space-x-2"
-              >
-                <FileText className="h-4 w-4" />
-                <span>Reports Dashboard</span>
-              </Button>
               <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
                 Documentation
               </Button>
@@ -173,7 +161,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                       Try: "Analyze coffee shop market in downtown Seattle" or "Generate customer segmentation report"
                     </span>
                     <Button
-                      onClick={() => onNavigateToChat()}
+                      onClick={onNavigateToChat}
                       className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white"
                     >
                       Start Chat
@@ -219,7 +207,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 }`}
                 onMouseEnter={() => setHoveredCard(template.id)}
                 onMouseLeave={() => setHoveredCard(null)}
-                onClick={() => template.onClick()}
+                onClick={template.onClick}
               >
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
@@ -278,7 +266,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
               <Card
                 key={index}
                 className="bg-white border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-orange-300 transition-all"
-                onClick={() => workspace.status === "Completed" ? onNavigateToResearch() : onNavigateToChat()}
+                onClick={workspace.status === "Completed" ? onNavigateToResearch : onNavigateToChat}
               >
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-3 mb-3">
